@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#1E293B"
+    android:padding="20dp">
+
+    <!-- Header Handle / Title -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="More Options"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingBottom="16dp"
+        android:gravity="center" />
+
+    <Button
+        android:id="@+id/btnMenuKeyboard"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Full PC Keyboard"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#334155"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btnMenuMedia"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Multimedia Remote"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#334155"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btnMenuPresenter"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Presenter Mode"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#334155"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btnMenuScanner"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Barcode &amp; QR Scanner"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#334155"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btnMenuJiggler"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Keep-Alive / Jiggler Mode"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#334155"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btnMenuSettings"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Settings &amp; Sensitivity"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#334155" />
+
+</LinearLayout>

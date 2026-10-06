@@ -24,6 +24,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.mad_nnm23cs124.bluetooth.BluetoothHidManager;
 import com.example.mad_nnm23cs124.ui.DeviceListDialog;
+import com.example.mad_nnm23cs124.ui.MoreBottomSheetDialog;
 
 @RequiresApi(api = Build.VERSION_CODES.P)
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
@@ -38,6 +39,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor gyroSensor;
     private boolean isGyroActive = false;
     private float mouseSensitivity = 1.0f;
+
+    private Button btnNavMouse, btnNavKeyboard, btnNavMedia, btnNavPresenter, btnNavMore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +58,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         tvDeviceName = findViewById(R.id.tvDeviceName);
         layoutTrackpad = findViewById(R.id.layoutTrackpad);
         btnAirMouse = findViewById(R.id.btnAirMouse);
+
+        btnNavMouse = findViewById(R.id.btnNavMouse);
+        btnNavKeyboard = findViewById(R.id.btnNavKeyboard);
+        btnNavMedia = findViewById(R.id.btnNavMedia);
+        btnNavPresenter = findViewById(R.id.btnNavPresenter);
+        btnNavMore = findViewById(R.id.btnNavMore);
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         if (sensorManager != null) {
@@ -104,6 +113,36 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // Settings Button (Mouse Sensitivity)
         findViewById(R.id.btnSettings).setOnClickListener(v -> showSettingsDialog());
 
+        // Modern Floating Bottom Navigation Bar
+        btnNavMouse.setOnClickListener(v -> {
+            selectNavTab(btnNavMouse);
+            Toast.makeText(this, "Mouse & Trackpad mode", Toast.LENGTH_SHORT).show();
+        });
+        btnNavKeyboard.setOnClickListener(v -> {
+            selectNavTab(btnNavKeyboard);
+            Toast.makeText(this, "Full PC Keyboard mode", Toast.LENGTH_SHORT).show();
+        });
+        btnNavMedia.setOnClickListener(v -> {
+            selectNavTab(btnNavMedia);
+            Toast.makeText(this, "Multimedia Remote mode", Toast.LENGTH_SHORT).show();
+        });
+        btnNavPresenter.setOnClickListener(v -> {
+            selectNavTab(btnNavPresenter);
+            Toast.makeText(this, "Presenter Mode", Toast.LENGTH_SHORT).show();
+        });
+
+        // 5th option: "More ☰" slides up bottom sheet drawer from bottom
+        btnNavMore.setOnClickListener(v -> {
+            MoreBottomSheetDialog bottomSheet = new MoreBottomSheetDialog();
+            bottomSheet.setOnMenuSelectedListener(option -> {
+                Toast.makeText(this, "Selected: " + option, Toast.LENGTH_SHORT).show();
+                if ("Settings".equals(option)) {
+                    showSettingsDialog();
+                }
+            });
+            bottomSheet.show(getSupportFragmentManager(), "MoreBottomSheet");
+        });
+
         // Hold-to-Use Air Mouse (Gyro) Button
         btnAirMouse.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
@@ -150,6 +189,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
             return true;
         });
+    }
+
+    private void selectNavTab(Button activeBtn) {
+        Button[] navButtons = {btnNavMouse, btnNavKeyboard, btnNavMedia, btnNavPresenter, btnNavMore};
+        for (Button btn : navButtons) {
+            if (btn == activeBtn) {
+                btn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2563EB")));
+                btn.setTextColor(Color.WHITE);
+                ViewCompat.setElevation(btn, 4f);
+            } else {
+                btn.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#00000000")));
+                btn.setTextColor(Color.parseColor("#94A3B8"));
+                ViewCompat.setElevation(btn, 0f);
+            }
+        }
     }
 
     private void showSettingsDialog() {
