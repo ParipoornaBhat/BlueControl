@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#121820"
+    android:padding="12dp"
+    tools:context=".MainActivity">
+
+    <!-- Header / Status Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Mouse / Keyboard"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnAirMouse"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="AIR MOUSE"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:backgroundTint="#1E293B"
+            android:layout_marginEnd="6dp" />
+
+        <Button
+            android:id="@+id/btnSettings"
+            android:layout_width="40dp"
+            android:layout_height="36dp"
+            android:text="⚙"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:backgroundTint="#1E293B"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/tvConnectionStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Not Connected"
+            android:textColor="#FF5252"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvDeviceName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tap to connect Bluetooth HID"
+        android:textColor="#8A99AD"
+        android:textSize="12sp"
+        android:paddingBottom="12dp" />
+
+    <!-- Top Media / Volume Controls -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="4"
+        android:paddingBottom="12dp">
+
+        <Button
+            android:id="@+id/btnVolMinus"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="VOL-"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#1E293B" />
+
+        <Button
+            android:id="@+id/btnVolPlus"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="VOL+"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#1E293B" />
+
+        <Button
+            android:id="@+id/btnMute"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="MUTE"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#1E293B" />
+
+        <Button
+            android:id="@+id/btnPlayPause"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="PLAY"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#1E293B" />
+    </LinearLayout>
+
+    <!-- Central Trackpad Area -->
+    <RelativeLayout
+        android:id="@+id/layoutTrackpad"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#1E293B"
+        android:layout_marginBottom="12dp"
+        android:padding="8dp">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_centerInParent="true"
+            android:src="@android:drawable/ic_menu_compass"
+            android:alpha="0.4"
+            android:contentDescription="Mouse Icon" />
+
+        <!-- Vertical Scroll Bar Indicator -->
+        <View
+            android:layout_width="4dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentEnd="true"
+            android:background="#334155" />
+    </RelativeLayout>
+
+    <!-- Mouse Click Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:layout_marginBottom="12dp">
+
+        <Button
+            android:id="@+id/btnLeftClick"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:backgroundTint="#1E293B" />
+
+        <Button
+            android:id="@+id/btnRightClick"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:backgroundTint="#1E293B" />
+    </LinearLayout>
+
+    <!-- Bottom Quick Action Bar (Undo, Redo, Copy, Paste) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:weightSum="4">
+
+        <Button
+            android:id="@+id/btnUndo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="UNDO"
+            android:textSize="12sp"
+            android:backgroundTint="#1E293B" />
+
+        <Button
+            android:id="@+id/btnRedo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="REDO"
+            android:textSize="12sp"
+            android:backgroundTint="#1E293B" />
+
+        <Button
+            android:id="@+id/btnCopy"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="COPY"
+            android:textSize="12sp"
+            android:backgroundTint="#1E293B" />
+
+        <Button
+            android:id="@+id/btnPaste"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="PASTE"
+            android:textSize="12sp"
+            android:backgroundTint="#1E293B" />
+    </LinearLayout>
+
+</LinearLayout>
