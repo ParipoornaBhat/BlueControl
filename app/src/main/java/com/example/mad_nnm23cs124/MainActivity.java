@@ -23,6 +23,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.mad_nnm23cs124.bluetooth.BluetoothHidManager;
+import com.example.mad_nnm23cs124.ui.DeviceListDialog;
 
 @RequiresApi(api = Build.VERSION_CODES.P)
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
@@ -73,6 +74,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 tvDeviceName.setText("Tap to connect Bluetooth HID");
             }
         });
+
+        // Click header to open device selector & connect to active device
+        tvDeviceName.setOnClickListener(v -> DeviceListDialog.show(this, hidManager, device -> {
+            hidManager.connectDevice(device);
+            Toast.makeText(this, "Connecting to " + device.getName() + "...", Toast.LENGTH_SHORT).show();
+        }));
 
         setupControls();
     }

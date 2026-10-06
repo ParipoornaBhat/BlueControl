@@ -5,22 +5,27 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHidDevice;
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings;
-import android.bluetooth.BluetoothHidDeviceAppQosSettings;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.annotation.RequiresApi;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+@RequiresApi(api = Build.VERSION_CODES.P)
 public class BluetoothHidManager {
     private static final String TAG = "BluetoothHidManager";
 
     private final Context context;
-    private BluetoothAdapter bluetoothAdapter;
+    private final BluetoothAdapter bluetoothAdapter;
     private BluetoothHidDevice hidDevice;
     private BluetoothDevice connectedDevice;
     private boolean isRegistered = false;
@@ -102,14 +107,42 @@ public class BluetoothHidManager {
         }
     };
 
+    public boolean isBluetoothEnabled() {
+        return bluetoothAdapter != null && bluetoothAdapter.isEnabled();
+    }
+
+    @SuppressLint("MissingPermission")
+    public List<BluetoothDevice> getBondedDevices() {
+        List<BluetoothDevice> list = new ArrayList<>();
+        if (bluetoothAdapter != null) {
+            Set<BluetoothDevice> bonded = bluetoothAdapter.getBondedDevices();
+            if (bonded != null) {
+                list.addAll(bonded);
+            }
+        }
+        return list;
+    }
+
+    @SuppressLint("MissingPermission")
+    public void connectDevice(BluetoothDevice device) {
+        if (hidDevice != null && device != null) {
+            hidDevice.connect(device);
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    public void disconnectDevice(BluetoothDevice device) {
+        if (hidDevice != null && device != null) {
+            hidDevice.disconnect(device);
+        }
+    }
+
     @SuppressLint("MissingPermission")
     public void sendKeyReport(byte modifier, byte keycode) {
         if (hidDevice == null || connectedDevice == null) return;
-        // Report ID 1: Keyboard report [modifier, reserved, keycode1, keycode2, ...]
         byte[] report = new byte[]{modifier, 0, keycode, 0, 0, 0, 0, 0};
         hidDevice.sendReport(connectedDevice, 1, report);
 
-        // Send key release after a short delay
         mainHandler.postDelayed(() -> {
             byte[] releaseReport = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
             if (hidDevice != null && connectedDevice != null) {
@@ -121,7 +154,6 @@ public class BluetoothHidManager {
     @SuppressLint("MissingPermission")
     public void sendMouseReport(byte buttons, byte dx, byte dy, byte wheel) {
         if (hidDevice == null || connectedDevice == null) return;
-        // Report ID 2: Mouse report [buttons, dx, dy, wheel]
         byte[] report = new byte[]{buttons, dx, dy, wheel};
         hidDevice.sendReport(connectedDevice, 2, report);
     }
@@ -129,7 +161,6 @@ public class BluetoothHidManager {
     @SuppressLint("MissingPermission")
     public void sendConsumerReport(int usageCode) {
         if (hidDevice == null || connectedDevice == null) return;
-        // Report ID 3: Consumer control (media) [usage_lo, usage_hi]
         byte[] report = new byte[]{(byte) (usageCode & 0xFF), (byte) ((usageCode >> 8) & 0xFF)};
         hidDevice.sendReport(connectedDevice, 3, report);
 
@@ -149,7 +180,6 @@ public class BluetoothHidManager {
         return connectedDevice;
     }
 
-    // Standard HID Report Descriptor for Keyboard (ID 1), Mouse (ID 2), and Consumer Control (ID 3)
     private static final byte[] HID_REPORT_DESCRIPTOR = {
             (byte) 0x05, (byte) 0x01, // Usage Page (Generic Desktop)
             (byte) 0x09, (byte) 0x06, // Usage (Keyboard)
