@@ -28,6 +28,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "src/main/keepRules/rules.keep"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
