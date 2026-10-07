@@ -41,9 +41,19 @@ public class BluetoothHidManager {
 
     public BluetoothHidManager(Context context) {
         this.context = context;
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter != null) {
-            bluetoothAdapter.getProfileProxy(context, profileListener, BluetoothProfile.HID_DEVICE);
+        this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        initProfileProxy();
+    }
+
+    public void initProfileProxy() {
+        if (bluetoothAdapter != null && hidDevice == null) {
+            try {
+                bluetoothAdapter.getProfileProxy(context, profileListener, BluetoothProfile.HID_DEVICE);
+            } catch (SecurityException se) {
+                Log.w(TAG, "BLUETOOTH_CONNECT permission not yet granted: " + se.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to getProfileProxy: " + e.getMessage(), e);
+            }
         }
     }
 
@@ -66,18 +76,24 @@ public class BluetoothHidManager {
     };
 
     @SuppressLint("MissingPermission")
-    private void registerApp() {
+    public void registerApp() {
         if (hidDevice == null) return;
 
-        BluetoothHidDeviceAppSdpSettings sdpSettings = new BluetoothHidDeviceAppSdpSettings(
-                "BlueControl",
-                "Bluetooth Keyboard & Mouse",
-                "BlueControl",
-                BluetoothHidDevice.SUBCLASS1_COMBO,
-                HID_REPORT_DESCRIPTOR
-        );
+        try {
+            BluetoothHidDeviceAppSdpSettings sdpSettings = new BluetoothHidDeviceAppSdpSettings(
+                    "BlueControl",
+                    "Bluetooth Keyboard & Mouse",
+                    "BlueControl",
+                    BluetoothHidDevice.SUBCLASS1_COMBO,
+                    HID_REPORT_DESCRIPTOR
+            );
 
-        hidDevice.registerApp(sdpSettings, null, null, executor, hidCallback);
+            hidDevice.registerApp(sdpSettings, null, null, executor, hidCallback);
+        } catch (SecurityException se) {
+            Log.w(TAG, "SecurityException while registering HID app: " + se.getMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering HID app: " + e.getMessage(), e);
+        }
     }
 
     private final BluetoothHidDevice.Callback hidCallback = new BluetoothHidDevice.Callback() {
@@ -91,7 +107,7 @@ public class BluetoothHidManager {
         public void onConnectionStateChanged(BluetoothDevice device, int state) {
             if (state == BluetoothProfile.STATE_CONNECTED) {
                 connectedDevice = device;
-                Log.d(TAG, "Connected to: " + device.getName());
+                Log.d(TAG, "Connected to: " + (device != null ? device.getName() : "Unknown"));
                 if (connectionListener != null) {
                     mainHandler.post(() -> connectionListener.onConnectionStateChanged(device, true));
                 }
@@ -108,16 +124,26 @@ public class BluetoothHidManager {
     };
 
     public boolean isBluetoothEnabled() {
-        return bluetoothAdapter != null && bluetoothAdapter.isEnabled();
+        try {
+            return bluetoothAdapter != null && bluetoothAdapter.isEnabled();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @SuppressLint("MissingPermission")
     public List<BluetoothDevice> getBondedDevices() {
         List<BluetoothDevice> list = new ArrayList<>();
         if (bluetoothAdapter != null) {
-            Set<BluetoothDevice> bonded = bluetoothAdapter.getBondedDevices();
-            if (bonded != null) {
-                list.addAll(bonded);
+            try {
+                Set<BluetoothDevice> bonded = bluetoothAdapter.getBondedDevices();
+                if (bonded != null) {
+                    list.addAll(bonded);
+                }
+            } catch (SecurityException se) {
+                Log.w(TAG, "SecurityException fetching bonded devices: " + se.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching bonded devices: " + e.getMessage(), e);
             }
         }
         return list;
@@ -126,50 +152,78 @@ public class BluetoothHidManager {
     @SuppressLint("MissingPermission")
     public void connectDevice(BluetoothDevice device) {
         if (hidDevice != null && device != null) {
-            hidDevice.connect(device);
+            try {
+                hidDevice.connect(device);
+            } catch (SecurityException se) {
+                Log.w(TAG, "SecurityException connecting device: " + se.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "Error connecting device: " + e.getMessage(), e);
+            }
         }
     }
 
     @SuppressLint("MissingPermission")
     public void disconnectDevice(BluetoothDevice device) {
         if (hidDevice != null && device != null) {
-            hidDevice.disconnect(device);
+            try {
+                hidDevice.disconnect(device);
+            } catch (SecurityException se) {
+                Log.w(TAG, "SecurityException disconnecting device: " + se.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "Error disconnecting device: " + e.getMessage(), e);
+            }
         }
     }
 
     @SuppressLint("MissingPermission")
     public void sendKeyReport(byte modifier, byte keycode) {
         if (hidDevice == null || connectedDevice == null) return;
-        byte[] report = new byte[]{modifier, 0, keycode, 0, 0, 0, 0, 0};
-        hidDevice.sendReport(connectedDevice, 1, report);
+        try {
+            byte[] report = new byte[]{modifier, 0, keycode, 0, 0, 0, 0, 0};
+            hidDevice.sendReport(connectedDevice, 1, report);
 
-        mainHandler.postDelayed(() -> {
-            byte[] releaseReport = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
-            if (hidDevice != null && connectedDevice != null) {
-                hidDevice.sendReport(connectedDevice, 1, releaseReport);
-            }
-        }, 50);
+            mainHandler.postDelayed(() -> {
+                try {
+                    byte[] releaseReport = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
+                    if (hidDevice != null && connectedDevice != null) {
+                        hidDevice.sendReport(connectedDevice, 1, releaseReport);
+                    }
+                } catch (Exception ignored) {}
+            }, 50);
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending key report: " + e.getMessage());
+        }
     }
 
     @SuppressLint("MissingPermission")
     public void sendMouseReport(byte buttons, byte dx, byte dy, byte wheel) {
         if (hidDevice == null || connectedDevice == null) return;
-        byte[] report = new byte[]{buttons, dx, dy, wheel};
-        hidDevice.sendReport(connectedDevice, 2, report);
+        try {
+            byte[] report = new byte[]{buttons, dx, dy, wheel};
+            hidDevice.sendReport(connectedDevice, 2, report);
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending mouse report: " + e.getMessage());
+        }
     }
 
     @SuppressLint("MissingPermission")
     public void sendConsumerReport(int usageCode) {
         if (hidDevice == null || connectedDevice == null) return;
-        byte[] report = new byte[]{(byte) (usageCode & 0xFF), (byte) ((usageCode >> 8) & 0xFF)};
-        hidDevice.sendReport(connectedDevice, 3, report);
+        try {
+            byte[] report = new byte[]{(byte) (usageCode & 0xFF), (byte) ((usageCode >> 8) & 0xFF)};
+            hidDevice.sendReport(connectedDevice, 3, report);
 
-        mainHandler.postDelayed(() -> {
-            byte[] release = new byte[]{0, 0};
-            if (hidDevice != null && connectedDevice != null) {
-                hidDevice.sendReport(connectedDevice, 3, release);
-            }
-        }, 50);
+            mainHandler.postDelayed(() -> {
+                try {
+                    byte[] release = new byte[]{0, 0};
+                    if (hidDevice != null && connectedDevice != null) {
+                        hidDevice.sendReport(connectedDevice, 3, release);
+                    }
+                } catch (Exception ignored) {}
+            }, 50);
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending consumer report: " + e.getMessage());
+        }
     }
 
     public void setConnectionListener(ConnectionListener listener) {
