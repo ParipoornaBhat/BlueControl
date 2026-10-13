@@ -11,7 +11,8 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.MotionEvent;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -29,6 +30,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.mad_nnm23cs124.bluetooth.BluetoothHidManager;
+import com.example.mad_nnm23cs124.ui.AdvancedTrackpadView;
 import com.example.mad_nnm23cs124.ui.DeviceListDialog;
 import com.example.mad_nnm23cs124.ui.MoreBottomSheetDialog;
 
@@ -46,7 +48,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Button btnAirMouse, btnKeyCtrl, btnKeyAlt;
     private TextView btnNavMouse, btnNavKeyboard, btnNavMedia, btnNavPresenter, btnNavMore;
 
-    private float lastX, lastY;
     private SensorManager sensorManager;
     private Sensor gyroSensor;
     private boolean isGyroActive = false;
@@ -56,6 +57,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private boolean isCtrlActive = false;
     private boolean isAltActive = false;
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private final ActivityResultLauncher<String[]> permissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
@@ -190,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    @SuppressLint({"MissingPermission", "ClickableViewAccessibility"})
+    @SuppressLint({"MissingPermission"})
     private void setupControls() {
         if (tvDeviceName != null) {
             tvDeviceName.setOnClickListener(v -> {
@@ -228,28 +231,37 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         bindClick(R.id.btnCopy, v -> sendShortcut((byte) 0x01, (byte) 0x06));
         bindClick(R.id.btnPaste, v -> sendShortcut((byte) 0x01, (byte) 0x19));
 
-        if (layoutTrackpad != null) {
-            layoutTrackpad.setOnTouchListener((v, event) -> {
-                if (isGyroActive && disableTrackpadOnGyro) return true;
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        lastX = event.getX();
-                        lastY = event.getY();
-                        v.performClick();
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        float currentX = event.getX();
-                        float currentY = event.getY();
-                        byte dx = (byte) ((currentX - lastX) * mouseSensitivity);
-                        byte dy = (byte) ((currentY - lastY) * mouseSensitivity);
-                        if (dx != 0 || dy != 0) {
-                            sendMouse((byte) 0, dx, dy, (byte) 0);
-                            lastX = currentX;
-                            lastY = currentY;
-                        }
-                        break;
+        // Advanced Trackpad with Multi-Touch Gestures & Touch Trails
+        if (layoutTrackpad instanceof AdvancedTrackpadView) {
+            AdvancedTrackpadView trackpad = (AdvancedTrackpadView) layoutTrackpad;
+            trackpad.setTrackpadEventListener(new AdvancedTrackpadView.TrackpadEventListener() {
+                @Override
+                public void onMouseMove(byte dx, byte dy) {
+                    if (isGyroActive && disableTrackpadOnGyro) return;
+                    sendMouse((byte) 0, (byte) (dx * mouseSensitivity), (byte) (dy * mouseSensitivity), (byte) 0);
                 }
-                return true;
+
+                @Override
+                public void onMouseScroll(byte wheel) {
+                    sendMouse((byte) 0, (byte) 0, (byte) 0, wheel);
+                }
+
+                @Override
+                public void onLeftClick() {
+                    sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
+                    mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
+                }
+
+                @Override
+                public void onRightClick() {
+                    sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
+                    mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
+                }
+
+                @Override
+                public void onThreeFingerSwipe() {
+                    sendShortcut((byte) 0x08, (byte) 0x2B); // Windows + Tab
+                }
             });
         }
 
@@ -299,6 +311,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 btnAirMouse.setText("AIR MOUSE ON");
                 btnAirMouse.setTextColor(Color.WHITE);
                 btnAirMouse.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2563EB")));
+                Toast.makeText(this, "Air Mouse ON", Toast.LENGTH_SHORT).show();
             } else {
                 isGyroActive = false;
                 Toast.makeText(this, "Gyroscope sensor unavailable", Toast.LENGTH_SHORT).show();
@@ -310,6 +323,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             btnAirMouse.setText("AIR MOUSE OFF");
             btnAirMouse.setTextColor(Color.WHITE);
             btnAirMouse.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#1E293B")));
+            Toast.makeText(this, "Air Mouse OFF", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -401,7 +415,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         bindClick(R.id.btnKeyF11, v -> sendKeyWithModifiers((byte) 0x44));
         bindClick(R.id.btnKeyF12, v -> sendKeyWithModifiers((byte) 0x45));
 
-        // Sticky Modifier Toggles (Ctrl and Alt) - silent toggle without annoying Toasts
         if (btnKeyCtrl != null) {
             btnKeyCtrl.setOnClickListener(v -> {
                 isCtrlActive = !isCtrlActive;
@@ -418,12 +431,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private void sendKeyWithModifiers(byte keyCode) {
         byte modifier = 0;
-        if (isCtrlActive) modifier |= 0x01; // Left Ctrl
-        if (isAltActive) modifier |= 0x04;  // Left Alt
+        if (isCtrlActive) modifier |= 0x01;
+        if (isAltActive) modifier |= 0x04;
 
         sendShortcut(modifier, keyCode);
 
-        // Auto-release sticky modifiers after key press
         if (isCtrlActive || isAltActive) {
             isCtrlActive = false;
             isAltActive = false;

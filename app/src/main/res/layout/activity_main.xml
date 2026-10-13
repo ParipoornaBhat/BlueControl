@@ -166,29 +166,13 @@
             </LinearLayout>
 
             <!-- Central Trackpad Area -->
-            <RelativeLayout
+            <com.example.mad_nnm23cs124.ui.AdvancedTrackpadView
                 android:id="@+id/layoutTrackpad"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:background="#1E293B"
-                android:layout_marginBottom="8dp"
-                android:padding="8dp">
-
-                <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_centerInParent="true"
-                    android:src="@android:drawable/ic_menu_compass"
-                    android:alpha="0.4"
-                    android:contentDescription="Mouse Icon" />
-
-                <View
-                    android:layout_width="4dp"
-                    android:layout_height="match_parent"
-                    android:layout_alignParentEnd="true"
-                    android:background="#334155" />
-            </RelativeLayout>
+                android:layout_marginBottom="8dp" />
 
             <!-- Click Buttons (Bottom Position Option - Default) -->
             <LinearLayout
