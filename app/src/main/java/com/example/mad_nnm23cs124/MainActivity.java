@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private TextView tvHeaderTitle, tvConnectionStatus, tvDeviceName;
     private View layoutTrackpad, layoutClickTop, layoutClickBottom;
     private View layoutMouseView, layoutKeyboardView, layoutMediaView, layoutPresenterView;
-    private Button btnAirMouse;
+    private Button btnAirMouse, btnKeyCtrl, btnKeyAlt;
     private TextView btnNavMouse, btnNavKeyboard, btnNavMedia, btnNavPresenter, btnNavMore;
 
     private float lastX, lastY;
@@ -53,6 +53,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float mouseSensitivity = 1.0f;
     private boolean clickButtonsOnTop = false;
     private boolean disableTrackpadOnGyro = true;
+
+    private boolean isCtrlActive = false;
+    private boolean isAltActive = false;
 
     private final ActivityResultLauncher<String[]> permissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
@@ -67,7 +70,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 if (allGranted) {
                     initBluetooth();
                 } else {
-                    Toast.makeText(this, "Bluetooth permissions required for remote control", Toast.LENGTH_LONG).show();
                     if (tvConnectionStatus != null) {
                         tvConnectionStatus.setText("Permission Denied");
                         tvConnectionStatus.setTextColor(getColor(android.R.color.holo_red_light));
@@ -108,6 +110,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         layoutClickBottom = findViewById(R.id.layoutClickBottom);
 
         btnAirMouse = findViewById(R.id.btnAirMouse);
+        btnKeyCtrl = findViewById(R.id.btnKeyCtrl);
+        btnKeyAlt = findViewById(R.id.btnKeyAlt);
 
         btnNavMouse = findViewById(R.id.btnNavMouse);
         btnNavKeyboard = findViewById(R.id.btnNavKeyboard);
@@ -168,7 +172,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     }
                     String name = (device != null && device.getName() != null) ? device.getName() : "Bluetooth Device";
                     if (tvDeviceName != null) tvDeviceName.setText(name);
-                    Toast.makeText(this, "Connected to " + name, Toast.LENGTH_SHORT).show();
                 } else {
                     if (tvConnectionStatus != null) {
                         tvConnectionStatus.setText("Not Connected");
@@ -189,7 +192,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @SuppressLint({"MissingPermission", "ClickableViewAccessibility"})
     private void setupControls() {
-        // Active device selector header tap
         if (tvDeviceName != null) {
             tvDeviceName.setOnClickListener(v -> {
                 if (hidManager != null) {
@@ -202,21 +204,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             });
         }
 
-        // Air Mouse Toggle Button
         if (btnAirMouse != null) {
             btnAirMouse.setOnClickListener(v -> toggleAirMouse());
         }
 
-        // Settings Button
         bindClick(R.id.btnSettings, v -> showSettingsDialog());
 
-        // Mouse Media Row
         bindClick(R.id.btnVolMinus, v -> sendConsumer(0x00EA));
         bindClick(R.id.btnVolPlus, v -> sendConsumer(0x00E9));
         bindClick(R.id.btnMute, v -> sendConsumer(0x00E2));
         bindClick(R.id.btnPlayPause, v -> sendConsumer(0x00CD));
 
-        // Click Buttons
         View.OnClickListener leftClickListener = v -> sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
         View.OnClickListener rightClickListener = v -> sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
 
@@ -225,13 +223,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         bindClick(R.id.btnLeftClickTop, leftClickListener);
         bindClick(R.id.btnRightClickTop, rightClickListener);
 
-        // Quick Action Shortcuts
         bindClick(R.id.btnUndo, v -> sendShortcut((byte) 0x01, (byte) 0x1D));
         bindClick(R.id.btnRedo, v -> sendShortcut((byte) 0x01, (byte) 0x1C));
         bindClick(R.id.btnCopy, v -> sendShortcut((byte) 0x01, (byte) 0x06));
         bindClick(R.id.btnPaste, v -> sendShortcut((byte) 0x01, (byte) 0x19));
 
-        // Touchpad Touch Movement
         if (layoutTrackpad != null) {
             layoutTrackpad.setOnTouchListener((v, event) -> {
                 if (isGyroActive && disableTrackpadOnGyro) return true;
@@ -257,16 +253,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             });
         }
 
-        // Setup Keyboard Keys
         setupKeyboardControls();
-
-        // Setup Media Remote Controls
         setupMediaRemoteControls();
-
-        // Setup Presenter Controls
         setupPresenterControls();
 
-        // Bottom Navigation Bar Mode Switching
         if (btnNavMouse != null) btnNavMouse.setOnClickListener(v -> switchMode("Mouse"));
         if (btnNavKeyboard != null) btnNavKeyboard.setOnClickListener(v -> switchMode("Keyboard"));
         if (btnNavMedia != null) btnNavMedia.setOnClickListener(v -> switchMode("Media"));
@@ -309,7 +299,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 btnAirMouse.setText("AIR MOUSE ON");
                 btnAirMouse.setTextColor(Color.WHITE);
                 btnAirMouse.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2563EB")));
-                Toast.makeText(this, "Air Mouse ON", Toast.LENGTH_SHORT).show();
             } else {
                 isGyroActive = false;
                 Toast.makeText(this, "Gyroscope sensor unavailable", Toast.LENGTH_SHORT).show();
@@ -321,7 +310,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             btnAirMouse.setText("AIR MOUSE OFF");
             btnAirMouse.setTextColor(Color.WHITE);
             btnAirMouse.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#1E293B")));
-            Toast.makeText(this, "Air Mouse OFF", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -391,30 +379,57 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         for (int i = 0; i < keyIds.length; i++) {
             final byte code = keyCodes[i];
-            bindClick(keyIds[i], v -> sendShortcut((byte) 0, code));
+            bindClick(keyIds[i], v -> sendKeyWithModifiers(code));
         }
 
-        bindClick(R.id.btnKeySpace, v -> sendShortcut((byte) 0, (byte) 0x2C));
-        bindClick(R.id.btnKeyEnter, v -> sendShortcut((byte) 0, (byte) 0x28));
-        bindClick(R.id.btnKeyBackspace, v -> sendShortcut((byte) 0, (byte) 0x2A));
-        bindClick(R.id.btnKeyEsc, v -> sendShortcut((byte) 0, (byte) 0x29));
-        bindClick(R.id.btnKeyDel, v -> sendShortcut((byte) 0, (byte) 0x4C));
+        bindClick(R.id.btnKeySpace, v -> sendKeyWithModifiers((byte) 0x2C));
+        bindClick(R.id.btnKeyEnter, v -> sendKeyWithModifiers((byte) 0x28));
+        bindClick(R.id.btnKeyBackspace, v -> sendKeyWithModifiers((byte) 0x2A));
+        bindClick(R.id.btnKeyEsc, v -> sendKeyWithModifiers((byte) 0x29));
+        bindClick(R.id.btnKeyDel, v -> sendKeyWithModifiers((byte) 0x4C));
 
-        bindClick(R.id.btnKeyF1, v -> sendShortcut((byte) 0, (byte) 0x3A));
-        bindClick(R.id.btnKeyF2, v -> sendShortcut((byte) 0, (byte) 0x3B));
-        bindClick(R.id.btnKeyF3, v -> sendShortcut((byte) 0, (byte) 0x3C));
-        bindClick(R.id.btnKeyF4, v -> sendShortcut((byte) 0, (byte) 0x3D));
-        bindClick(R.id.btnKeyF5, v -> sendShortcut((byte) 0, (byte) 0x3E));
-        bindClick(R.id.btnKeyF6, v -> sendShortcut((byte) 0, (byte) 0x3F));
-        bindClick(R.id.btnKeyF7, v -> sendShortcut((byte) 0, (byte) 0x40));
-        bindClick(R.id.btnKeyF8, v -> sendShortcut((byte) 0, (byte) 0x41));
-        bindClick(R.id.btnKeyF9, v -> sendShortcut((byte) 0, (byte) 0x42));
-        bindClick(R.id.btnKeyF10, v -> sendShortcut((byte) 0, (byte) 0x43));
-        bindClick(R.id.btnKeyF11, v -> sendShortcut((byte) 0, (byte) 0x44));
-        bindClick(R.id.btnKeyF12, v -> sendShortcut((byte) 0, (byte) 0x45));
+        bindClick(R.id.btnKeyF1, v -> sendKeyWithModifiers((byte) 0x3A));
+        bindClick(R.id.btnKeyF2, v -> sendKeyWithModifiers((byte) 0x3B));
+        bindClick(R.id.btnKeyF3, v -> sendKeyWithModifiers((byte) 0x3C));
+        bindClick(R.id.btnKeyF4, v -> sendKeyWithModifiers((byte) 0x3D));
+        bindClick(R.id.btnKeyF5, v -> sendKeyWithModifiers((byte) 0x3E));
+        bindClick(R.id.btnKeyF6, v -> sendKeyWithModifiers((byte) 0x3F));
+        bindClick(R.id.btnKeyF7, v -> sendKeyWithModifiers((byte) 0x40));
+        bindClick(R.id.btnKeyF8, v -> sendKeyWithModifiers((byte) 0x41));
+        bindClick(R.id.btnKeyF9, v -> sendKeyWithModifiers((byte) 0x42));
+        bindClick(R.id.btnKeyF10, v -> sendKeyWithModifiers((byte) 0x43));
+        bindClick(R.id.btnKeyF11, v -> sendKeyWithModifiers((byte) 0x44));
+        bindClick(R.id.btnKeyF12, v -> sendKeyWithModifiers((byte) 0x45));
 
-        bindClick(R.id.btnKeyCtrl, v -> Toast.makeText(this, "Ctrl modifier active", Toast.LENGTH_SHORT).show());
-        bindClick(R.id.btnKeyAlt, v -> Toast.makeText(this, "Alt modifier active", Toast.LENGTH_SHORT).show());
+        // Sticky Modifier Toggles (Ctrl and Alt) - silent toggle without annoying Toasts
+        if (btnKeyCtrl != null) {
+            btnKeyCtrl.setOnClickListener(v -> {
+                isCtrlActive = !isCtrlActive;
+                btnKeyCtrl.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor(isCtrlActive ? "#2563EB" : "#334155")));
+            });
+        }
+        if (btnKeyAlt != null) {
+            btnKeyAlt.setOnClickListener(v -> {
+                isAltActive = !isAltActive;
+                btnKeyAlt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor(isAltActive ? "#2563EB" : "#334155")));
+            });
+        }
+    }
+
+    private void sendKeyWithModifiers(byte keyCode) {
+        byte modifier = 0;
+        if (isCtrlActive) modifier |= 0x01; // Left Ctrl
+        if (isAltActive) modifier |= 0x04;  // Left Alt
+
+        sendShortcut(modifier, keyCode);
+
+        // Auto-release sticky modifiers after key press
+        if (isCtrlActive || isAltActive) {
+            isCtrlActive = false;
+            isAltActive = false;
+            if (btnKeyCtrl != null) btnKeyCtrl.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#334155")));
+            if (btnKeyAlt != null) btnKeyAlt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#334155")));
+        }
     }
 
     private void setupMediaRemoteControls() {
