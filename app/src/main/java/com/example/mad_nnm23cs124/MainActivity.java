@@ -68,8 +68,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     initBluetooth();
                 } else {
                     Toast.makeText(this, "Bluetooth permissions required for remote control", Toast.LENGTH_LONG).show();
-                    tvConnectionStatus.setText("Permission Denied");
-                    tvConnectionStatus.setTextColor(getColor(android.R.color.holo_red_light));
+                    if (tvConnectionStatus != null) {
+                        tvConnectionStatus.setText("Permission Denied");
+                        tvConnectionStatus.setTextColor(getColor(android.R.color.holo_red_light));
+                    }
                 }
             }
     );
@@ -160,83 +162,100 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             hidManager.setConnectionListener((device, connected) -> {
                 if (connected) {
-                    tvConnectionStatus.setText("Connected");
-                    tvConnectionStatus.setTextColor(getColor(android.R.color.holo_green_light));
+                    if (tvConnectionStatus != null) {
+                        tvConnectionStatus.setText("Connected");
+                        tvConnectionStatus.setTextColor(getColor(android.R.color.holo_green_light));
+                    }
                     String name = (device != null && device.getName() != null) ? device.getName() : "Bluetooth Device";
-                    tvDeviceName.setText(name);
+                    if (tvDeviceName != null) tvDeviceName.setText(name);
                     Toast.makeText(this, "Connected to " + name, Toast.LENGTH_SHORT).show();
                 } else {
-                    tvConnectionStatus.setText("Not Connected");
-                    tvConnectionStatus.setTextColor(getColor(android.R.color.holo_red_light));
-                    tvDeviceName.setText("Tap to connect Bluetooth HID");
+                    if (tvConnectionStatus != null) {
+                        tvConnectionStatus.setText("Not Connected");
+                        tvConnectionStatus.setTextColor(getColor(android.R.color.holo_red_light));
+                    }
+                    if (tvDeviceName != null) tvDeviceName.setText("Tap to connect Bluetooth HID");
                 }
             });
         } catch (Exception ignored) {}
     }
 
+    private void bindClick(int id, View.OnClickListener listener) {
+        View view = findViewById(id);
+        if (view != null) {
+            view.setOnClickListener(listener);
+        }
+    }
+
     @SuppressLint({"MissingPermission", "ClickableViewAccessibility"})
     private void setupControls() {
         // Active device selector header tap
-        tvDeviceName.setOnClickListener(v -> {
-            if (hidManager != null) {
-                DeviceListDialog.show(this, hidManager, device -> {
-                    hidManager.connectDevice(device);
-                    String name = (device != null && device.getName() != null) ? device.getName() : "Device";
-                    Toast.makeText(this, "Connecting to " + name + "...", Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
+        if (tvDeviceName != null) {
+            tvDeviceName.setOnClickListener(v -> {
+                if (hidManager != null) {
+                    DeviceListDialog.show(this, hidManager, device -> {
+                        hidManager.connectDevice(device);
+                        String name = (device != null && device.getName() != null) ? device.getName() : "Device";
+                        Toast.makeText(this, "Connecting to " + name + "...", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
+        }
 
         // Air Mouse Toggle Button
-        btnAirMouse.setOnClickListener(v -> toggleAirMouse());
+        if (btnAirMouse != null) {
+            btnAirMouse.setOnClickListener(v -> toggleAirMouse());
+        }
 
         // Settings Button
-        findViewById(R.id.btnSettings).setOnClickListener(v -> showSettingsDialog());
+        bindClick(R.id.btnSettings, v -> showSettingsDialog());
 
         // Mouse Media Row
-        findViewById(R.id.btnVolMinus).setOnClickListener(v -> sendConsumer(0x00EA));
-        findViewById(R.id.btnVolPlus).setOnClickListener(v -> sendConsumer(0x00E9));
-        findViewById(R.id.btnMute).setOnClickListener(v -> sendConsumer(0x00E2));
-        findViewById(R.id.btnPlayPause).setOnClickListener(v -> sendConsumer(0x00CD));
+        bindClick(R.id.btnVolMinus, v -> sendConsumer(0x00EA));
+        bindClick(R.id.btnVolPlus, v -> sendConsumer(0x00E9));
+        bindClick(R.id.btnMute, v -> sendConsumer(0x00E2));
+        bindClick(R.id.btnPlayPause, v -> sendConsumer(0x00CD));
 
         // Click Buttons
         View.OnClickListener leftClickListener = v -> sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
         View.OnClickListener rightClickListener = v -> sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
 
-        findViewById(R.id.btnLeftClickBottom).setOnClickListener(leftClickListener);
-        findViewById(R.id.btnRightClickBottom).setOnClickListener(rightClickListener);
-        findViewById(R.id.btnLeftClickTop).setOnClickListener(leftClickListener);
-        findViewById(R.id.btnRightClickTop).setOnClickListener(rightClickListener);
+        bindClick(R.id.btnLeftClickBottom, leftClickListener);
+        bindClick(R.id.btnRightClickBottom, rightClickListener);
+        bindClick(R.id.btnLeftClickTop, leftClickListener);
+        bindClick(R.id.btnRightClickTop, rightClickListener);
 
         // Quick Action Shortcuts
-        findViewById(R.id.btnUndo).setOnClickListener(v -> sendShortcut((byte) 0x01, (byte) 0x1D));
-        findViewById(R.id.btnRedo).setOnClickListener(v -> sendShortcut((byte) 0x01, (byte) 0x1C));
-        findViewById(R.id.btnCopy).setOnClickListener(v -> sendShortcut((byte) 0x01, (byte) 0x06));
-        findViewById(R.id.btnPaste).setOnClickListener(v -> sendShortcut((byte) 0x01, (byte) 0x19));
+        bindClick(R.id.btnUndo, v -> sendShortcut((byte) 0x01, (byte) 0x1D));
+        bindClick(R.id.btnRedo, v -> sendShortcut((byte) 0x01, (byte) 0x1C));
+        bindClick(R.id.btnCopy, v -> sendShortcut((byte) 0x01, (byte) 0x06));
+        bindClick(R.id.btnPaste, v -> sendShortcut((byte) 0x01, (byte) 0x19));
 
         // Touchpad Touch Movement
-        layoutTrackpad.setOnTouchListener((v, event) -> {
-            if (isGyroActive && disableTrackpadOnGyro) return true;
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    lastX = event.getX();
-                    lastY = event.getY();
-                    v.performClick();
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    float currentX = event.getX();
-                    float currentY = event.getY();
-                    byte dx = (byte) ((currentX - lastX) * mouseSensitivity);
-                    byte dy = (byte) ((currentY - lastY) * mouseSensitivity);
-                    if (dx != 0 || dy != 0) {
-                        sendMouse((byte) 0, dx, dy, (byte) 0);
-                        lastX = currentX;
-                        lastY = currentY;
-                    }
-                    break;
-            }
-            return true;
-        });
+        if (layoutTrackpad != null) {
+            layoutTrackpad.setOnTouchListener((v, event) -> {
+                if (isGyroActive && disableTrackpadOnGyro) return true;
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        lastX = event.getX();
+                        lastY = event.getY();
+                        v.performClick();
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        float currentX = event.getX();
+                        float currentY = event.getY();
+                        byte dx = (byte) ((currentX - lastX) * mouseSensitivity);
+                        byte dy = (byte) ((currentY - lastY) * mouseSensitivity);
+                        if (dx != 0 || dy != 0) {
+                            sendMouse((byte) 0, dx, dy, (byte) 0);
+                            lastX = currentX;
+                            lastY = currentY;
+                        }
+                        break;
+                }
+                return true;
+            });
+        }
 
         // Setup Keyboard Keys
         setupKeyboardControls();
@@ -248,38 +267,42 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupPresenterControls();
 
         // Bottom Navigation Bar Mode Switching
-        btnNavMouse.setOnClickListener(v -> switchMode("Mouse"));
-        btnNavKeyboard.setOnClickListener(v -> switchMode("Keyboard"));
-        btnNavMedia.setOnClickListener(v -> switchMode("Media"));
-        btnNavPresenter.setOnClickListener(v -> switchMode("Presenter"));
+        if (btnNavMouse != null) btnNavMouse.setOnClickListener(v -> switchMode("Mouse"));
+        if (btnNavKeyboard != null) btnNavKeyboard.setOnClickListener(v -> switchMode("Keyboard"));
+        if (btnNavMedia != null) btnNavMedia.setOnClickListener(v -> switchMode("Media"));
+        if (btnNavPresenter != null) btnNavPresenter.setOnClickListener(v -> switchMode("Presenter"));
 
-        btnNavMore.setOnClickListener(v -> {
-            MoreBottomSheetDialog bottomSheet = new MoreBottomSheetDialog();
-            bottomSheet.setOnMenuSelectedListener(option -> {
-                switch (option) {
-                    case "Keyboard":
-                        switchMode("Keyboard");
-                        break;
-                    case "Media":
-                        switchMode("Media");
-                        break;
-                    case "Presenter":
-                        switchMode("Presenter");
-                        break;
-                    case "Settings":
-                        showSettingsDialog();
-                        break;
-                    default:
-                        Toast.makeText(this, option + " selected", Toast.LENGTH_SHORT).show();
-                        break;
-                }
+        if (btnNavMore != null) {
+            btnNavMore.setOnClickListener(v -> {
+                MoreBottomSheetDialog bottomSheet = new MoreBottomSheetDialog();
+                bottomSheet.setOnMenuSelectedListener(option -> {
+                    switch (option) {
+                        case "Keyboard":
+                            switchMode("Keyboard");
+                            break;
+                        case "Media":
+                            switchMode("Media");
+                            break;
+                        case "Presenter":
+                            switchMode("Presenter");
+                            break;
+                        case "Settings":
+                            showSettingsDialog();
+                            break;
+                        default:
+                            Toast.makeText(this, option + " selected", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+                });
+                bottomSheet.show(getSupportFragmentManager(), "MoreBottomSheet");
             });
-            bottomSheet.show(getSupportFragmentManager(), "MoreBottomSheet");
-        });
+        }
     }
 
     private void toggleAirMouse() {
         isGyroActive = !isGyroActive;
+        if (btnAirMouse == null) return;
+
         if (isGyroActive) {
             if (gyroSensor != null && sensorManager != null) {
                 sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_GAME);
@@ -296,17 +319,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 sensorManager.unregisterListener(this);
             }
             btnAirMouse.setText("AIR MOUSE OFF");
-            btnAirMouse.setTextColor(Color.parseColor("#94A3B8"));
+            btnAirMouse.setTextColor(Color.WHITE);
             btnAirMouse.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#1E293B")));
             Toast.makeText(this, "Air Mouse OFF", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void switchMode(String mode) {
-        layoutMouseView.setVisibility(View.GONE);
-        layoutKeyboardView.setVisibility(View.GONE);
-        layoutMediaView.setVisibility(View.GONE);
-        layoutPresenterView.setVisibility(View.GONE);
+        if (layoutMouseView != null) layoutMouseView.setVisibility(View.GONE);
+        if (layoutKeyboardView != null) layoutKeyboardView.setVisibility(View.GONE);
+        if (layoutMediaView != null) layoutMediaView.setVisibility(View.GONE);
+        if (layoutPresenterView != null) layoutPresenterView.setVisibility(View.GONE);
 
         resetNavTabStyle(btnNavMouse);
         resetNavTabStyle(btnNavKeyboard);
@@ -316,36 +339,42 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         switch (mode) {
             case "Mouse":
-                layoutMouseView.setVisibility(View.VISIBLE);
+                if (layoutMouseView != null) layoutMouseView.setVisibility(View.VISIBLE);
                 highlightNavTab(btnNavMouse);
-                tvHeaderTitle.setText("Mouse / Trackpad");
+                if (tvHeaderTitle != null) tvHeaderTitle.setText("Mouse / Trackpad");
                 break;
             case "Keyboard":
-                layoutKeyboardView.setVisibility(View.VISIBLE);
+                if (layoutKeyboardView != null) layoutKeyboardView.setVisibility(View.VISIBLE);
                 highlightNavTab(btnNavKeyboard);
-                tvHeaderTitle.setText("Full PC Keyboard");
+                if (tvHeaderTitle != null) tvHeaderTitle.setText("Full PC Keyboard");
                 break;
             case "Media":
-                layoutMediaView.setVisibility(View.VISIBLE);
+                if (layoutMediaView != null) layoutMediaView.setVisibility(View.VISIBLE);
                 highlightNavTab(btnNavMedia);
-                tvHeaderTitle.setText("Multimedia Remote");
+                if (tvHeaderTitle != null) tvHeaderTitle.setText("Multimedia Remote");
                 break;
             case "Presenter":
-                layoutPresenterView.setVisibility(View.VISIBLE);
+                if (layoutPresenterView != null) layoutPresenterView.setVisibility(View.VISIBLE);
                 highlightNavTab(btnNavPresenter);
-                tvHeaderTitle.setText("Presenter Remote");
+                if (tvHeaderTitle != null) tvHeaderTitle.setText("Presenter Remote");
                 break;
         }
     }
 
     private void highlightNavTab(TextView tv) {
+        if (tv == null) return;
         tv.setTextColor(Color.WHITE);
-        tv.getBackground().setTint(Color.parseColor("#2563EB"));
+        if (tv.getBackground() != null) {
+            tv.getBackground().setTint(Color.parseColor("#2563EB"));
+        }
     }
 
     private void resetNavTabStyle(TextView tv) {
+        if (tv == null) return;
         tv.setTextColor(Color.parseColor("#94A3B8"));
-        tv.getBackground().setTint(Color.TRANSPARENT);
+        if (tv.getBackground() != null) {
+            tv.getBackground().setTint(Color.TRANSPARENT);
+        }
     }
 
     private void setupKeyboardControls() {
@@ -362,37 +391,50 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         for (int i = 0; i < keyIds.length; i++) {
             final byte code = keyCodes[i];
-            findViewById(keyIds[i]).setOnClickListener(v -> sendShortcut((byte) 0, code));
+            bindClick(keyIds[i], v -> sendShortcut((byte) 0, code));
         }
 
-        findViewById(R.id.btnKeySpace).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x2C));
-        findViewById(R.id.btnKeyEnter).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x28));
-        findViewById(R.id.btnKeyBackspace).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x2A));
-        findViewById(R.id.btnKeyEsc).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x29));
-        findViewById(R.id.btnKeyDel).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x4C));
+        bindClick(R.id.btnKeySpace, v -> sendShortcut((byte) 0, (byte) 0x2C));
+        bindClick(R.id.btnKeyEnter, v -> sendShortcut((byte) 0, (byte) 0x28));
+        bindClick(R.id.btnKeyBackspace, v -> sendShortcut((byte) 0, (byte) 0x2A));
+        bindClick(R.id.btnKeyEsc, v -> sendShortcut((byte) 0, (byte) 0x29));
+        bindClick(R.id.btnKeyDel, v -> sendShortcut((byte) 0, (byte) 0x4C));
 
-        findViewById(R.id.btnKeyCtrl).setOnClickListener(v -> Toast.makeText(this, "Ctrl modifier active", Toast.LENGTH_SHORT).show());
-        findViewById(R.id.btnKeyAlt).setOnClickListener(v -> Toast.makeText(this, "Alt modifier active", Toast.LENGTH_SHORT).show());
+        bindClick(R.id.btnKeyF1, v -> sendShortcut((byte) 0, (byte) 0x3A));
+        bindClick(R.id.btnKeyF2, v -> sendShortcut((byte) 0, (byte) 0x3B));
+        bindClick(R.id.btnKeyF3, v -> sendShortcut((byte) 0, (byte) 0x3C));
+        bindClick(R.id.btnKeyF4, v -> sendShortcut((byte) 0, (byte) 0x3D));
+        bindClick(R.id.btnKeyF5, v -> sendShortcut((byte) 0, (byte) 0x3E));
+        bindClick(R.id.btnKeyF6, v -> sendShortcut((byte) 0, (byte) 0x3F));
+        bindClick(R.id.btnKeyF7, v -> sendShortcut((byte) 0, (byte) 0x40));
+        bindClick(R.id.btnKeyF8, v -> sendShortcut((byte) 0, (byte) 0x41));
+        bindClick(R.id.btnKeyF9, v -> sendShortcut((byte) 0, (byte) 0x42));
+        bindClick(R.id.btnKeyF10, v -> sendShortcut((byte) 0, (byte) 0x43));
+        bindClick(R.id.btnKeyF11, v -> sendShortcut((byte) 0, (byte) 0x44));
+        bindClick(R.id.btnKeyF12, v -> sendShortcut((byte) 0, (byte) 0x45));
+
+        bindClick(R.id.btnKeyCtrl, v -> Toast.makeText(this, "Ctrl modifier active", Toast.LENGTH_SHORT).show());
+        bindClick(R.id.btnKeyAlt, v -> Toast.makeText(this, "Alt modifier active", Toast.LENGTH_SHORT).show());
     }
 
     private void setupMediaRemoteControls() {
-        findViewById(R.id.btnDpadUp).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x52));
-        findViewById(R.id.btnDpadDown).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x51));
-        findViewById(R.id.btnDpadLeft).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x50));
-        findViewById(R.id.btnDpadRight).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x4F));
-        findViewById(R.id.btnDpadOk).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x28));
+        bindClick(R.id.btnDpadUp, v -> sendShortcut((byte) 0, (byte) 0x52));
+        bindClick(R.id.btnDpadDown, v -> sendShortcut((byte) 0, (byte) 0x51));
+        bindClick(R.id.btnDpadLeft, v -> sendShortcut((byte) 0, (byte) 0x50));
+        bindClick(R.id.btnDpadRight, v -> sendShortcut((byte) 0, (byte) 0x4F));
+        bindClick(R.id.btnDpadOk, v -> sendShortcut((byte) 0, (byte) 0x28));
 
-        findViewById(R.id.btnMediaPrev).setOnClickListener(v -> sendConsumer(0x00B6));
-        findViewById(R.id.btnMediaNext).setOnClickListener(v -> sendConsumer(0x00B5));
-        findViewById(R.id.btnMediaMute).setOnClickListener(v -> sendConsumer(0x00E2));
-        findViewById(R.id.btnMediaPlayPauseLarge).setOnClickListener(v -> sendConsumer(0x00CD));
+        bindClick(R.id.btnMediaPrev, v -> sendConsumer(0x00B6));
+        bindClick(R.id.btnMediaNext, v -> sendConsumer(0x00B5));
+        bindClick(R.id.btnMediaMute, v -> sendConsumer(0x00E2));
+        bindClick(R.id.btnMediaPlayPauseLarge, v -> sendConsumer(0x00CD));
     }
 
     private void setupPresenterControls() {
-        findViewById(R.id.btnPresenterPrevSlide).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x4B)); // Page Up
-        findViewById(R.id.btnPresenterNextSlide).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x4E)); // Page Down
-        findViewById(R.id.btnPresenterStart).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x3E));     // F5
-        findViewById(R.id.btnPresenterBlank).setOnClickListener(v -> sendShortcut((byte) 0, (byte) 0x05));     // B key
+        bindClick(R.id.btnPresenterPrevSlide, v -> sendShortcut((byte) 0, (byte) 0x4B)); // Page Up
+        bindClick(R.id.btnPresenterNextSlide, v -> sendShortcut((byte) 0, (byte) 0x4E)); // Page Down
+        bindClick(R.id.btnPresenterStart, v -> sendShortcut((byte) 0, (byte) 0x3E));     // F5
+        bindClick(R.id.btnPresenterBlank, v -> sendShortcut((byte) 0, (byte) 0x05));     // B key
     }
 
     private void showSettingsDialog() {
@@ -427,8 +469,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             break;
                         case 4:
                             clickButtonsOnTop = !clickButtonsOnTop;
-                            layoutClickTop.setVisibility(clickButtonsOnTop ? View.VISIBLE : View.GONE);
-                            layoutClickBottom.setVisibility(clickButtonsOnTop ? View.GONE : View.VISIBLE);
+                            if (layoutClickTop != null) layoutClickTop.setVisibility(clickButtonsOnTop ? View.VISIBLE : View.GONE);
+                            if (layoutClickBottom != null) layoutClickBottom.setVisibility(clickButtonsOnTop ? View.GONE : View.VISIBLE);
                             Toast.makeText(this, "Click buttons moved to " + (clickButtonsOnTop ? "Top" : "Bottom"), Toast.LENGTH_SHORT).show();
                             break;
                         case 5:
