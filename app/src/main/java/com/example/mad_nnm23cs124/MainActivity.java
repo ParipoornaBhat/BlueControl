@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -33,6 +34,7 @@ import com.example.mad_nnm23cs124.bluetooth.BluetoothHidManager;
 import com.example.mad_nnm23cs124.ui.AdvancedTrackpadView;
 import com.example.mad_nnm23cs124.ui.DeviceListDialog;
 import com.example.mad_nnm23cs124.ui.MoreBottomSheetDialog;
+import com.example.mad_nnm23cs124.utils.ThemeManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,6 +86,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ThemeManager.applyTheme(this);
+
         try {
             EdgeToEdge.enable(this);
         } catch (Exception ignored) {}
@@ -133,6 +137,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         setupControls();
         checkAndRequestPermissions();
+
+        // Default open Mouse view with highlighted pill tab
+        switchMode("Mouse");
     }
 
     private void checkAndRequestPermissions() {
@@ -366,17 +373,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private void highlightNavTab(TextView tv) {
         if (tv == null) return;
         tv.setTextColor(Color.WHITE);
-        if (tv.getBackground() != null) {
-            tv.getBackground().setTint(Color.parseColor("#2563EB"));
-        }
+        tv.setBackgroundResource(R.drawable.bg_nav_pill);
     }
 
     private void resetNavTabStyle(TextView tv) {
         if (tv == null) return;
         tv.setTextColor(Color.parseColor("#94A3B8"));
-        if (tv.getBackground() != null) {
-            tv.getBackground().setTint(Color.TRANSPARENT);
-        }
+        tv.setBackgroundColor(Color.TRANSPARENT);
     }
 
     private void setupKeyboardControls() {
@@ -465,13 +468,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     private void showSettingsDialog() {
+        boolean isDark = ThemeManager.isDarkMode(this);
         String[] options = {
                 "Sensitivity: Slow (0.5x)",
                 "Sensitivity: Normal (1.0x)",
                 "Sensitivity: Fast (1.5x)",
                 "Sensitivity: Turbo (2.0x)",
                 "Click Buttons Position: " + (clickButtonsOnTop ? "Top" : "Bottom"),
-                "Disable Trackpad on Gyro: " + (disableTrackpadOnGyro ? "Enabled" : "Disabled")
+                "Disable Trackpad on Gyro: " + (disableTrackpadOnGyro ? "Enabled" : "Disabled"),
+                "Theme Mode: " + (isDark ? "Dark (Switch to Light)" : "Light (Switch to Dark)")
         };
 
         new AlertDialog.Builder(this)
@@ -503,6 +508,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         case 5:
                             disableTrackpadOnGyro = !disableTrackpadOnGyro;
                             Toast.makeText(this, "Disable trackpad on Gyro: " + disableTrackpadOnGyro, Toast.LENGTH_SHORT).show();
+                            break;
+                        case 6:
+                            ThemeManager.setDarkMode(this, !isDark);
+                            recreate();
                             break;
                     }
                 })

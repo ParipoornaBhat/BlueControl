@@ -6,68 +6,86 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#121820"
-    android:padding="8dp"
+    android:background="#0F172A"
+    android:padding="12dp"
     tools:context=".MainActivity">
 
-    <!-- Header / Status Bar -->
+    <!-- Aesthetic Top Header Card -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingBottom="4dp">
+        android:orientation="vertical"
+        android:background="@drawable/bg_bottom_nav"
+        android:elevation="6dp"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvHeaderTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mouse / Trackpad"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02" />
+
+            <Button
+                android:id="@+id/btnAirMouse"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="AIR MOUSE OFF"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:backgroundTint="#334155"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:layout_marginEnd="6dp" />
+
+            <Button
+                android:id="@+id/btnSettings"
+                android:layout_width="38dp"
+                android:layout_height="36dp"
+                android:text="⚙"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:backgroundTint="#334155"
+                android:padding="0dp"
+                android:layout_marginEnd="6dp" />
+
+            <!-- Connection Status Badge -->
+            <TextView
+                android:id="@+id/tvConnectionStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Not Connected"
+                android:textColor="#EF4444"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:background="#1F2937"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/tvHeaderTitle"
-            android:layout_width="0dp"
+            android:id="@+id/tvDeviceName"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Mouse / Keyboard"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/btnAirMouse"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="AIR MOUSE OFF"
-            android:textColor="#FFFFFF"
-            android:textSize="10sp"
-            android:backgroundTint="#1E293B"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:layout_marginEnd="4dp" />
-
-        <Button
-            android:id="@+id/btnSettings"
-            android:layout_width="38dp"
-            android:layout_height="36dp"
-            android:text="⚙"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:backgroundTint="#1E293B"
-            android:padding="0dp"
-            android:layout_marginEnd="4dp" />
-
-        <TextView
-            android:id="@+id/tvConnectionStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Not Connected"
-            android:textColor="#FF5252"
-            android:textSize="11sp" />
+            android:text="Tap to connect Bluetooth HID"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:paddingTop="6dp" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvDeviceName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Tap to connect Bluetooth HID"
-        android:textColor="#8A99AD"
-        android:textSize="11sp"
-        android:paddingBottom="8dp" />
 
     <!-- Central View Area Container -->
     <FrameLayout
@@ -75,7 +93,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="12dp">
 
         <!-- MODE 1: Mouse / Trackpad View -->
         <LinearLayout
@@ -91,7 +109,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:weightSum="4"
-                android:paddingBottom="8dp">
+                android:paddingBottom="10dp">
 
                 <Button
                     android:id="@+id/btnVolMinus"
@@ -101,6 +119,7 @@
                     android:layout_marginEnd="4dp"
                     android:text="VOL-"
                     android:textColor="#FFFFFF"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
 
                 <Button
@@ -111,6 +130,7 @@
                     android:layout_marginEnd="4dp"
                     android:text="VOL+"
                     android:textColor="#FFFFFF"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
 
                 <Button
@@ -121,6 +141,7 @@
                     android:layout_marginEnd="4dp"
                     android:text="MUTE"
                     android:textColor="#FFFFFF"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
 
                 <Button
@@ -130,6 +151,7 @@
                     android:layout_weight="1"
                     android:text="PLAY"
                     android:textColor="#FFFFFF"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
             </LinearLayout>
 
@@ -141,17 +163,17 @@
                 android:orientation="horizontal"
                 android:weightSum="2"
                 android:visibility="gone"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="10dp">
 
                 <Button
                     android:id="@+id/btnLeftClickTop"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
+                    android:layout_marginEnd="6dp"
                     android:text="LEFT CLICK"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
 
                 <Button
@@ -161,7 +183,7 @@
                     android:layout_weight="1"
                     android:text="RIGHT CLICK"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
             </LinearLayout>
 
@@ -172,7 +194,7 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:background="#1E293B"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="10dp" />
 
             <!-- Click Buttons (Bottom Position Option - Default) -->
             <LinearLayout
@@ -182,17 +204,17 @@
                 android:orientation="horizontal"
                 android:weightSum="2"
                 android:visibility="visible"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="10dp">
 
                 <Button
                     android:id="@+id/btnLeftClickBottom"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
+                    android:layout_marginEnd="6dp"
                     android:text="LEFT CLICK"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
 
                 <Button
@@ -202,7 +224,7 @@
                     android:layout_weight="1"
                     android:text="RIGHT CLICK"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
             </LinearLayout>
 
@@ -221,7 +243,7 @@
                     android:layout_marginEnd="4dp"
                     android:text="UNDO"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
 
                 <Button
@@ -232,7 +254,7 @@
                     android:layout_marginEnd="4dp"
                     android:text="REDO"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
 
                 <Button
@@ -243,7 +265,7 @@
                     android:layout_marginEnd="4dp"
                     android:text="COPY"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
 
                 <Button
@@ -253,7 +275,7 @@
                     android:layout_weight="1"
                     android:text="PASTE"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:backgroundTint="#1E293B" />
             </LinearLayout>
 
@@ -412,9 +434,9 @@
                 android:orientation="horizontal"
                 android:weightSum="3"
                 android:layout_marginBottom="16dp">
-                <Button android:id="@+id/btnMediaPrev" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="⏮ PREV" android:textColor="#FFFFFF" android:backgroundTint="#334155" />
-                <Button android:id="@+id/btnMediaMute" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="🔇 MUTE" android:textColor="#FFFFFF" android:backgroundTint="#334155" />
-                <Button android:id="@+id/btnMediaNext" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="NEXT ⏭" android:textColor="#FFFFFF" android:backgroundTint="#334155" />
+                <Button android:id="@+id/btnMediaPrev" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="PREV" android:textColor="#FFFFFF" android:textSize="12sp" android:backgroundTint="#334155" />
+                <Button android:id="@+id/btnMediaMute" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="MUTE" android:textColor="#FFFFFF" android:textSize="12sp" android:backgroundTint="#334155" />
+                <Button android:id="@+id/btnMediaNext" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="NEXT" android:textColor="#FFFFFF" android:textSize="12sp" android:backgroundTint="#334155" />
             </LinearLayout>
 
             <!-- D-Pad Navigation -->
@@ -445,9 +467,9 @@
                 android:id="@+id/btnMediaPlayPauseLarge"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="⏯ PLAY / PAUSE"
+                android:text="PLAY / PAUSE"
                 android:textColor="#FFFFFF"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:backgroundTint="#22C55E" />
         </LinearLayout>
@@ -531,8 +553,7 @@
             android:gravity="center"
             android:singleLine="true"
             android:ellipsize="end"
-            android:background="@drawable/bg_bottom_nav"
-            android:backgroundTint="#2563EB"
+            android:background="@drawable/bg_nav_pill"
             android:clickable="true"
             android:focusable="true" />
 
