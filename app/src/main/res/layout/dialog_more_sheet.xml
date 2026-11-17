@@ -3,26 +3,70 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="#1E293B"
-    android:padding="20dp">
+    android:background="@drawable/bg_sheet_card"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="28dp">
 
-    <!-- Header Handle / Title -->
+    <!-- Bottom Sheet Drag Handle -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_sheet_handle"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Header Title & Subtitle -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="More Options"
+        android:text="Control Modes &amp; Tools"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:paddingBottom="16dp"
         android:gravity="center" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Switch input mode or manage your PC connection"
+        android:textColor="#94A3B8"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="18dp" />
+
+    <!-- Prominent Bluetooth Device Manager Option -->
+    <Button
+        android:id="@+id/btnMenuBluetooth"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:text="⚡  Bluetooth Device Manager"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:backgroundTint="#2563EB"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Section Label -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ADDITIONAL MODES"
+        android:textColor="#64748B"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.05"
+        android:layout_marginBottom="8dp" />
 
     <Button
         android:id="@+id/btnMenuKeyboard"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Full PC Keyboard"
+        android:text="⌨  Full PC Keyboard"
         android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:backgroundTint="#334155"
         android:layout_marginBottom="8dp" />
 
@@ -30,8 +74,9 @@
         android:id="@+id/btnMenuMedia"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Multimedia Remote"
+        android:text="🎵  Multimedia Remote"
         android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:backgroundTint="#334155"
         android:layout_marginBottom="8dp" />
 
@@ -39,8 +84,9 @@
         android:id="@+id/btnMenuPresenter"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Presenter Mode"
+        android:text="📊  Presenter Mode"
         android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:backgroundTint="#334155"
         android:layout_marginBottom="8dp" />
 
@@ -48,8 +94,9 @@
         android:id="@+id/btnMenuScanner"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Barcode &amp; QR Scanner"
+        android:text="📷  Barcode &amp; QR Scanner"
         android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:backgroundTint="#334155"
         android:layout_marginBottom="8dp" />
 
@@ -57,8 +104,9 @@
         android:id="@+id/btnMenuJiggler"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Keep-Alive / Jiggler Mode"
+        android:text="⚡  Keep-Alive / Jiggler Mode"
         android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:backgroundTint="#334155"
         android:layout_marginBottom="8dp" />
 
@@ -66,8 +114,9 @@
         android:id="@+id/btnMenuSettings"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Settings &amp; Sensitivity"
+        android:text="⚙  Settings &amp; Sensitivity"
         android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:backgroundTint="#334155" />
 
 </LinearLayout>

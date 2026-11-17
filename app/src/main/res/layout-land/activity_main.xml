@@ -6,28 +6,84 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#121820"
-    android:padding="6dp"
+    android:background="#0F172A"
+    android:padding="8dp"
     tools:context=".MainActivity">
 
-    <!-- Top Header -->
+    <!-- Top Header Card for Landscape -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingBottom="4dp">
+        android:background="@drawable/bg_header_card"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:layout_marginBottom="6dp">
 
         <TextView
             android:id="@+id/tvHeaderTitle"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="Mouse / Trackpad"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:layout_marginEnd="12dp" />
 
+        <!-- Glowing Status Pill -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_status_pill"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp">
+
+            <TextView
+                android:id="@+id/tvConnectionStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● Not Connected"
+                android:textColor="#EF4444"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Device Name -->
+        <TextView
+            android:id="@+id/tvDeviceName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Tap to connect Bluetooth HID"
+            android:textColor="#94A3B8"
+            android:textSize="11sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Dedicated Bluetooth Button -->
+        <Button
+            android:id="@+id/btnBluetooth"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="⚡ PAIR"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:backgroundTint="#2563EB"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:layout_marginEnd="4dp" />
+
+        <!-- Air Mouse Toggle -->
         <Button
             android:id="@+id/btnAirMouse"
             android:layout_width="wrap_content"
@@ -35,11 +91,13 @@
             android:text="AIR MOUSE OFF"
             android:textColor="#FFFFFF"
             android:textSize="9sp"
-            android:backgroundTint="#1E293B"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
+            android:textStyle="bold"
+            android:backgroundTint="#334155"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
             android:layout_marginEnd="4dp" />
 
+        <!-- Settings Button -->
         <Button
             android:id="@+id/btnSettings"
             android:layout_width="34dp"
@@ -47,27 +105,9 @@
             android:text="⚙"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
-            android:backgroundTint="#1E293B"
-            android:padding="0dp"
-            android:layout_marginEnd="4dp" />
-
-        <TextView
-            android:id="@+id/tvConnectionStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Not Connected"
-            android:textColor="#FF5252"
-            android:textSize="10sp" />
+            android:backgroundTint="#334155"
+            android:padding="0dp" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvDeviceName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Tap to connect Bluetooth HID"
-        android:textColor="#8A99AD"
-        android:textSize="10sp"
-        android:paddingBottom="4dp" />
 
     <!-- Central Area Split Row for Landscape -->
     <FrameLayout
@@ -75,7 +115,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="4dp">
+        android:layout_marginBottom="6dp">
 
         <!-- MODE 1: Mouse View Split in Landscape -->
         <LinearLayout
@@ -93,34 +133,35 @@
                 android:orientation="vertical"
                 android:layout_marginEnd="6dp">
 
-                <RelativeLayout
-                    android:id="@+id/layoutTrackpad"
+                <!-- Advanced Trackpad View in Landscape with subtle border -->
+                <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:background="#1E293B"
-                    android:padding="6dp">
+                    android:background="@drawable/bg_trackpad">
 
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_centerInParent="true"
-                        android:src="@android:drawable/ic_menu_compass"
-                        android:alpha="0.4"
-                        android:contentDescription="Mouse Icon" />
+                    <com.example.mad_nnm23cs124.ui.AdvancedTrackpadView
+                        android:id="@+id/layoutTrackpad"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
 
-                    <View
-                        android:layout_width="4dp"
-                        android:layout_height="match_parent"
-                        android:layout_alignParentEnd="true"
-                        android:background="#334155" />
-                </RelativeLayout>
+                    <!-- Center Subtle Watermark Guide -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="1 Finger: Move  •  2 Fingers: Scroll  •  3 Fingers: Tasks"
+                        android:textColor="#334155"
+                        android:textSize="9sp"
+                        android:clickable="false"
+                        android:focusable="false" />
+                </FrameLayout>
 
                 <!-- Click Buttons Bottom -->
                 <LinearLayout
                     android:id="@+id/layoutClickBottom"
                     android:layout_width="match_parent"
-                    android:layout_height="42dp"
+                    android:layout_height="44dp"
                     android:orientation="horizontal"
                     android:weightSum="2"
                     android:layout_marginTop="4dp">
@@ -131,9 +172,10 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        android:text="LEFT CLICK"
+                        android:text="🖱️ LEFT CLICK"
                         android:textColor="#FFFFFF"
-                        android:textSize="10sp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
                         android:backgroundTint="#1E293B" />
 
                     <Button
@@ -141,17 +183,18 @@
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="RIGHT CLICK"
+                        android:text="🖱️ RIGHT CLICK"
                         android:textColor="#FFFFFF"
-                        android:textSize="10sp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
                         android:backgroundTint="#1E293B" />
                 </LinearLayout>
 
-                <!-- Click Buttons Top -->
+                <!-- Click Buttons Top (Alternate) -->
                 <LinearLayout
                     android:id="@+id/layoutClickTop"
                     android:layout_width="match_parent"
-                    android:layout_height="42dp"
+                    android:layout_height="44dp"
                     android:orientation="horizontal"
                     android:weightSum="2"
                     android:visibility="gone"
@@ -163,9 +206,10 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        android:text="LEFT CLICK"
+                        android:text="🖱️ LEFT CLICK"
                         android:textColor="#FFFFFF"
-                        android:textSize="10sp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
                         android:backgroundTint="#1E293B" />
 
                     <Button
@@ -173,31 +217,35 @@
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="RIGHT CLICK"
+                        android:text="🖱️ RIGHT CLICK"
                         android:textColor="#FFFFFF"
-                        android:textSize="10sp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
                         android:backgroundTint="#1E293B" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Right 40%: Controls & Quick Actions -->
+            <!-- Right 40%: Volume & Quick Action Controls -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="2"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:background="@drawable/bg_trackpad"
+                android:padding="6dp">
 
+                <!-- Volume Row -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="38dp"
                     android:orientation="horizontal"
                     android:weightSum="4"
-                    android:layout_marginBottom="4dp">
+                    android:layout_marginBottom="6dp">
 
-                    <Button android:id="@+id/btnVolMinus" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="VOL-" android:textColor="#FFFFFF" android:textSize="9sp" android:backgroundTint="#1E293B" android:padding="0dp" />
-                    <Button android:id="@+id/btnVolPlus" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="VOL+" android:textColor="#FFFFFF" android:textSize="9sp" android:backgroundTint="#1E293B" android:padding="0dp" />
-                    <Button android:id="@+id/btnMute" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="MUTE" android:textColor="#FFFFFF" android:textSize="9sp" android:backgroundTint="#1E293B" android:padding="0dp" />
-                    <Button android:id="@+id/btnPlayPause" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="PLAY" android:textColor="#FFFFFF" android:textSize="9sp" android:backgroundTint="#1E293B" android:padding="0dp" />
+                    <Button android:id="@+id/btnVolMinus" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="🔉 -" android:textColor="#FFFFFF" android:textSize="9sp" android:textStyle="bold" android:backgroundTint="#334155" android:padding="0dp" />
+                    <Button android:id="@+id/btnVolPlus" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="🔊 +" android:textColor="#FFFFFF" android:textSize="9sp" android:textStyle="bold" android:backgroundTint="#334155" android:padding="0dp" />
+                    <Button android:id="@+id/btnMute" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="🔇" android:textColor="#FFFFFF" android:textSize="11sp" android:backgroundTint="#334155" android:padding="0dp" />
+                    <Button android:id="@+id/btnPlayPause" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="⏯" android:textColor="#FFFFFF" android:textSize="11sp" android:backgroundTint="#2563EB" android:padding="0dp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -207,23 +255,34 @@
                     android:orientation="vertical"
                     android:gravity="center">
 
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="MACRO SHORTCUTS"
+                        android:textColor="#64748B"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:letterSpacing="0.05"
+                        android:layout_marginBottom="4dp" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="42dp"
+                        android:layout_height="38dp"
                         android:orientation="horizontal"
                         android:weightSum="2"
                         android:layout_marginBottom="4dp">
-                        <Button android:id="@+id/btnUndo" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="UNDO" android:textColor="#FFFFFF" android:textSize="10sp" android:backgroundTint="#1E293B" />
-                        <Button android:id="@+id/btnRedo" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="REDO" android:textColor="#FFFFFF" android:textSize="10sp" android:backgroundTint="#1E293B" />
+                        <Button android:id="@+id/btnUndo" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="↩ UNDO" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold" android:backgroundTint="#1E293B" />
+                        <Button android:id="@+id/btnRedo" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="↪ REDO" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold" android:backgroundTint="#1E293B" />
                     </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="42dp"
+                        android:layout_height="38dp"
                         android:orientation="horizontal"
                         android:weightSum="2">
-                        <Button android:id="@+id/btnCopy" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="COPY" android:textColor="#FFFFFF" android:textSize="10sp" android:backgroundTint="#1E293B" />
-                        <Button android:id="@+id/btnPaste" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="PASTE" android:textColor="#FFFFFF" android:textSize="10sp" android:backgroundTint="#1E293B" />
+                        <Button android:id="@+id/btnCopy" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="2dp" android:text="📋 COPY" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold" android:backgroundTint="#1E293B" />
+                        <Button android:id="@+id/btnPaste" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="📥 PASTE" android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold" android:backgroundTint="#1E293B" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -231,13 +290,13 @@
 
         </LinearLayout>
 
-        <!-- MODE 2: Full PC Keyboard View in Landscape -->
+        <!-- MODE 2: Full PC Keyboard View in Landscape with Live Mobile Typing & Speech-to-Text Bar -->
         <ScrollView
             android:id="@+id/layoutKeyboardView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#1E293B"
-            android:padding="4dp"
+            android:background="@drawable/bg_trackpad"
+            android:padding="6dp"
             android:visibility="gone">
 
             <LinearLayout
@@ -245,9 +304,63 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <!-- Live Mobile Typing & Speech-to-Text Bar -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_header_card"
+                    android:padding="6dp"
+                    android:layout_marginBottom="6dp">
+
+                    <EditText
+                        android:id="@+id/etLiveInput"
+                        android:layout_width="0dp"
+                        android:layout_height="38dp"
+                        android:layout_weight="1"
+                        android:hint="Live Mobile Typing / Speech-to-Text..."
+                        android:textColor="#FFFFFF"
+                        android:textColorHint="#64748B"
+                        android:textSize="11sp"
+                        android:background="@drawable/bg_input_bar"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:inputType="textCapSentences|textAutoCorrect"
+                        android:imeOptions="actionSend"
+                        android:maxLines="1"
+                        android:singleLine="true" />
+
+                    <Button
+                        android:id="@+id/btnLiveMic"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:text="🎙️"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:backgroundTint="#334155"
+                        android:padding="0dp"
+                        android:layout_marginStart="4dp" />
+
+                    <Button
+                        android:id="@+id/btnLiveSend"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:minWidth="60dp"
+                        android:text="SEND ↵"
+                        android:textColor="#FFFFFF"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:backgroundTint="#2563EB"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:layout_marginStart="4dp" />
+                </LinearLayout>
+
+                <!-- F-Keys Row 1 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
                     android:orientation="horizontal"
                     android:weightSum="7"
                     android:layout_marginBottom="2dp">
@@ -260,9 +373,10 @@
                     <Button android:id="@+id/btnKeyF6" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="F6" android:textColor="#FFFFFF" android:textSize="8sp" android:backgroundTint="#334155" android:padding="0dp" />
                 </LinearLayout>
 
+                <!-- F-Keys Row 2 -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
+                    android:layout_height="34dp"
                     android:orientation="horizontal"
                     android:weightSum="7"
                     android:layout_marginBottom="4dp">
@@ -275,6 +389,7 @@
                     <Button android:id="@+id/btnKeyDel" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="DEL" android:textColor="#FFFFFF" android:textSize="8sp" android:backgroundTint="#334155" android:padding="0dp" />
                 </LinearLayout>
 
+                <!-- QWERTY Row 1 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="36dp"
@@ -293,6 +408,7 @@
                     <Button android:id="@+id/btnKeyP" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="P" android:textColor="#FFFFFF" android:backgroundTint="#334155" android:padding="0dp" />
                 </LinearLayout>
 
+                <!-- QWERTY Row 2 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="36dp"
@@ -310,6 +426,7 @@
                     <Button android:id="@+id/btnKeyL" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="L" android:textColor="#FFFFFF" android:backgroundTint="#334155" android:padding="0dp" />
                 </LinearLayout>
 
+                <!-- QWERTY Row 3 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="36dp"
@@ -326,6 +443,7 @@
                     <Button android:id="@+id/btnKeyBackspace" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="⌫" android:textColor="#FFFFFF" android:backgroundTint="#334155" android:padding="0dp" />
                 </LinearLayout>
 
+                <!-- Bottom Control Keys -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="36dp"
@@ -346,38 +464,60 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal"
-            android:background="#1E293B"
-            android:padding="8dp"
+            android:background="@drawable/bg_trackpad"
+            android:padding="12dp"
             android:gravity="center"
             android:visibility="gone"
             android:weightSum="2">
 
+            <!-- Playback Controls Left -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:gravity="center">
+                android:gravity="center"
+                android:paddingEnd="12dp">
 
-                <Button android:id="@+id/btnMediaPrev" android:layout_width="match_parent" android:layout_height="40dp" android:text="⏮ PREV" android:textColor="#FFFFFF" android:backgroundTint="#334155" android:layout_marginBottom="6dp" />
-                <Button android:id="@+id/btnMediaNext" android:layout_width="match_parent" android:layout_height="40dp" android:text="NEXT ⏭" android:textColor="#FFFFFF" android:backgroundTint="#334155" android:layout_marginBottom="6dp" />
-                <Button android:id="@+id/btnMediaPlayPauseLarge" android:layout_width="match_parent" android:layout_height="48dp" android:text="⏯ PLAY / PAUSE" android:textColor="#FFFFFF" android:backgroundTint="#22C55E" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:orientation="horizontal"
+                    android:weightSum="3"
+                    android:layout_marginBottom="12dp">
+                    <Button android:id="@+id/btnMediaPrev" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="⏮ PREV" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" android:backgroundTint="#334155" />
+                    <Button android:id="@+id/btnMediaMute" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="4dp" android:text="🔇 MUTE" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" android:backgroundTint="#334155" />
+                    <Button android:id="@+id/btnMediaNext" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="NEXT ⏭" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" android:backgroundTint="#334155" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnMediaPlayPauseLarge"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="⏯  PLAY / PAUSE"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#22C55E" />
             </LinearLayout>
 
+            <!-- D-Pad Right -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:gravity="center">
+                android:gravity="center"
+                android:background="@drawable/bg_header_card"
+                android:padding="8dp">
 
-                <Button android:id="@+id/btnDpadUp" android:layout_width="52dp" android:layout_height="44dp" android:text="▲" android:textColor="#FFFFFF" android:backgroundTint="#334155" />
-                <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:orientation="horizontal" android:gravity="center">
-                    <Button android:id="@+id/btnDpadLeft" android:layout_width="52dp" android:layout_height="match_parent" android:text="◀" android:textColor="#FFFFFF" android:backgroundTint="#334155" />
-                    <Button android:id="@+id/btnDpadOk" android:layout_width="52dp" android:layout_height="match_parent" android:text="OK" android:textColor="#FFFFFF" android:backgroundTint="#2563EB" />
-                    <Button android:id="@+id/btnDpadRight" android:layout_width="52dp" android:layout_height="match_parent" android:text="▶" android:textColor="#FFFFFF" android:backgroundTint="#334155" />
+                <Button android:id="@+id/btnDpadUp" android:layout_width="60dp" android:layout_height="44dp" android:text="▲" android:textColor="#FFFFFF" android:textSize="16sp" android:backgroundTint="#334155" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:orientation="horizontal" android:gravity="center" android:layout_marginTop="2dp" android:layout_marginBottom="2dp">
+                    <Button android:id="@+id/btnDpadLeft" android:layout_width="60dp" android:layout_height="match_parent" android:text="◀" android:textColor="#FFFFFF" android:textSize="16sp" android:backgroundTint="#334155" android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnDpadOk" android:layout_width="60dp" android:layout_height="match_parent" android:text="OK" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#2563EB" />
+                    <Button android:id="@+id/btnDpadRight" android:layout_width="60dp" android:layout_height="match_parent" android:text="▶" android:textColor="#FFFFFF" android:textSize="16sp" android:backgroundTint="#334155" android:layout_marginStart="4dp" />
                 </LinearLayout>
-                <Button android:id="@+id/btnDpadDown" android:layout_width="52dp" android:layout_height="44dp" android:text="▼" android:textColor="#FFFFFF" android:backgroundTint="#334155" />
+                <Button android:id="@+id/btnDpadDown" android:layout_width="60dp" android:layout_height="44dp" android:text="▼" android:textColor="#FFFFFF" android:textSize="16sp" android:backgroundTint="#334155" />
             </LinearLayout>
 
         </LinearLayout>
@@ -388,11 +528,11 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal"
-            android:background="#1E293B"
+            android:background="@drawable/bg_trackpad"
             android:padding="12dp"
             android:gravity="center"
             android:visibility="gone"
-            android:weightSum="2">
+            android:weightSum="3">
 
             <Button
                 android:id="@+id/btnPresenterPrevSlide"
@@ -400,9 +540,10 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:layout_marginEnd="6dp"
-                android:text="▲ PREVIOUS SLIDE"
+                android:text="▲  PREVIOUS SLIDE (PAGE UP)"
                 android:textColor="#FFFFFF"
-                android:textSize="13sp"
+                android:textSize="12sp"
+                android:textStyle="bold"
                 android:backgroundTint="#334155" />
 
             <Button
@@ -410,10 +551,41 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="▼ NEXT SLIDE"
+                android:layout_marginEnd="6dp"
+                android:text="▼  NEXT SLIDE (PAGE DOWN)"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
+                android:textStyle="bold"
                 android:backgroundTint="#2563EB" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:weightSum="2">
+                <Button
+                    android:id="@+id/btnPresenterStart"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:layout_marginBottom="4dp"
+                    android:text="▶ START (F5)"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#334155" />
+                <Button
+                    android:id="@+id/btnPresenterBlank"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text="⬛ BLACK SCREEN"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#334155" />
+            </LinearLayout>
 
         </LinearLayout>
 
@@ -423,13 +595,13 @@
     <LinearLayout
         android:id="@+id/layoutBottomNav"
         android:layout_width="match_parent"
-        android:layout_height="42dp"
+        android:layout_height="44dp"
         android:orientation="horizontal"
         android:background="@drawable/bg_bottom_nav"
-        android:elevation="4dp"
+        android:elevation="6dp"
         android:weightSum="5"
-        android:paddingTop="2dp"
-        android:paddingBottom="2dp">
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp">
 
         <TextView
             android:id="@+id/btnNavMouse"
@@ -442,8 +614,7 @@
             android:textColor="#FFFFFF"
             android:gravity="center"
             android:singleLine="true"
-            android:background="@drawable/bg_bottom_nav"
-            android:backgroundTint="#2563EB"
+            android:background="@drawable/bg_nav_pill"
             android:clickable="true"
             android:focusable="true" />
 

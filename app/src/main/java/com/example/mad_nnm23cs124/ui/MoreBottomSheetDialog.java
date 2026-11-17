@@ -31,6 +31,14 @@ public class MoreBottomSheetDialog extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.dialog_more_sheet, container, false);
 
+        View btnMenuBluetooth = view.findViewById(R.id.btnMenuBluetooth);
+        if (btnMenuBluetooth != null) {
+            btnMenuBluetooth.setOnClickListener(v -> {
+                if (listener != null) listener.onMenuSelected("Bluetooth");
+                dismiss();
+            });
+        }
+
         view.findViewById(R.id.btnMenuKeyboard).setOnClickListener(v -> {
             if (listener != null) listener.onMenuSelected("Keyboard");
             dismiss();

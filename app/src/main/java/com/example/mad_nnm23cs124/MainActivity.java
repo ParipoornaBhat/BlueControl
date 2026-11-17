@@ -2,6 +2,13 @@ package com.example.mad_nnm23cs124;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -13,9 +20,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.MotionEvent;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
+import android.speech.RecognizerIntent;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,11 +58,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private BluetoothHidManager hidManager;
     private TextView tvHeaderTitle, tvConnectionStatus, tvDeviceName;
+    private View btnBluetooth;
     private View layoutTrackpad, layoutClickTop, layoutClickBottom;
     private View layoutMouseView, layoutKeyboardView, layoutMediaView, layoutPresenterView;
     private Button btnAirMouse, btnKeyCtrl, btnKeyAlt;
     private TextView btnNavMouse, btnNavKeyboard, btnNavMedia, btnNavPresenter, btnNavMore;
 
+    // Live Mobile Typing & Speech-to-Text Input Bar
+    private EditText etSendText;
+    private View btnSendText;
+    private View btnLiveMic;
+
+    private Vibrator vibrator;
     private SensorManager sensorManager;
     private Sensor gyroSensor;
     private boolean isGyroActive = false;
@@ -76,12 +96,59 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     initBluetooth();
                 } else {
                     if (tvConnectionStatus != null) {
-                        tvConnectionStatus.setText("Permission Denied");
-                        tvConnectionStatus.setTextColor(getColor(android.R.color.holo_red_light));
+                        tvConnectionStatus.setText("● Permission Denied");
+                        tvConnectionStatus.setTextColor(Color.parseColor("#EF4444"));
                     }
                 }
             }
     );
+
+    private final ActivityResultLauncher<Intent> speechRecognizerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    ArrayList<String> matches = result.getData().getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    if (matches != null && !matches.isEmpty()) {
+                        String spokenText = matches.get(0);
+                        if (etSendText != null) {
+                            etSendText.setText(spokenText);
+                            etSendText.setSelection(spokenText.length());
+                        }
+                        sendStringToHid(spokenText);
+                    }
+                }
+            }
+    );
+
+    private final BroadcastReceiver bluetoothStateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null) return;
+            String action = intent.getAction();
+            if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+                switch (state) {
+                    case BluetoothAdapter.STATE_TURNING_OFF:
+                    case BluetoothAdapter.STATE_OFF:
+                        updateConnectionStatusUI(null, BluetoothProfile.STATE_DISCONNECTED);
+                        if (tvConnectionStatus != null) {
+                            tvConnectionStatus.setText("● Bluetooth Off");
+                            tvConnectionStatus.setTextColor(Color.parseColor("#EF4444"));
+                        }
+                        if (tvDeviceName != null) {
+                            tvDeviceName.setText("Bluetooth is disabled");
+                        }
+                        break;
+                    case BluetoothAdapter.STATE_ON:
+                        if (hidManager != null) {
+                            hidManager.initProfileProxy(MainActivity.this);
+                        }
+                        updateConnectionStatusUI(null, BluetoothProfile.STATE_DISCONNECTED);
+                        break;
+                }
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,9 +170,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             });
         }
 
+        initHaptics();
+
         tvHeaderTitle = findViewById(R.id.tvHeaderTitle);
         tvConnectionStatus = findViewById(R.id.tvConnectionStatus);
         tvDeviceName = findViewById(R.id.tvDeviceName);
+        btnBluetooth = findViewById(R.id.btnBluetooth);
 
         layoutMouseView = findViewById(R.id.layoutMouseView);
         layoutKeyboardView = findViewById(R.id.layoutKeyboardView);
@@ -136,10 +206,41 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         setupControls();
+        setupLiveTypingControls();
         checkAndRequestPermissions();
 
-        // Default open Mouse view with highlighted pill tab
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        registerReceiver(bluetoothStateReceiver, filter);
+
+        // Default open Mouse / Trackpad view
         switchMode("Mouse");
+    }
+
+    private void initHaptics() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                VibratorManager vm = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+                if (vm != null) {
+                    vibrator = vm.getDefaultVibrator();
+                }
+            } else {
+                vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void performHaptic() {
+        try {
+            if (vibrator != null && vibrator.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK));
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(15, VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    vibrator.vibrate(15);
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private void checkAndRequestPermissions() {
@@ -174,48 +275,115 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 hidManager.initProfileProxy(this);
             }
 
-            hidManager.setConnectionListener((device, connected) -> {
-                if (connected) {
-                    if (tvConnectionStatus != null) {
-                        tvConnectionStatus.setText("Connected");
-                        tvConnectionStatus.setTextColor(getColor(android.R.color.holo_green_light));
-                    }
-                    String name = (device != null && device.getName() != null) ? device.getName() : "Bluetooth Device";
-                    if (tvDeviceName != null) tvDeviceName.setText(name);
-                } else {
-                    if (tvConnectionStatus != null) {
-                        tvConnectionStatus.setText("Not Connected");
-                        tvConnectionStatus.setTextColor(getColor(android.R.color.holo_red_light));
-                    }
-                    if (tvDeviceName != null) tvDeviceName.setText("Tap to connect Bluetooth HID");
-                }
-            });
+            hidManager.setConnectionListener(this::updateConnectionStatusUI);
+
+            BluetoothDevice current = hidManager.getConnectedDevice();
+            if (current != null) {
+                int state = hidManager.getConnectionState(current);
+                updateConnectionStatusUI(current, state != 0 ? state : BluetoothProfile.STATE_CONNECTED);
+            } else {
+                updateConnectionStatusUI(null, BluetoothProfile.STATE_DISCONNECTED);
+            }
         } catch (Exception ignored) {}
+    }
+
+    private void updateConnectionStatusUI(BluetoothDevice device, int state) {
+        mainHandler.post(() -> {
+            if (tvConnectionStatus == null) return;
+            switch (state) {
+                case BluetoothProfile.STATE_CONNECTED:
+                    tvConnectionStatus.setText("● Connected");
+                    tvConnectionStatus.setTextColor(Color.parseColor("#22C55E"));
+                    String name = null;
+                    if (device != null) {
+                        try {
+                            name = device.getName();
+                        } catch (SecurityException ignored) {}
+                    }
+                    if (name == null || name.trim().isEmpty()) {
+                        name = "Bluetooth HID Connected";
+                    }
+                    if (tvDeviceName != null) {
+                        tvDeviceName.setText(name);
+                    }
+                    break;
+
+                case BluetoothProfile.STATE_CONNECTING:
+                    tvConnectionStatus.setText("● Connecting...");
+                    tvConnectionStatus.setTextColor(Color.parseColor("#F59E0B"));
+                    String connectingName = null;
+                    if (device != null) {
+                        try {
+                            connectingName = device.getName();
+                        } catch (SecurityException ignored) {}
+                    }
+                    if (tvDeviceName != null) {
+                        tvDeviceName.setText(connectingName != null ? ("Connecting to " + connectingName + "...") : "Connecting to device...");
+                    }
+                    break;
+
+                case BluetoothProfile.STATE_DISCONNECTING:
+                    tvConnectionStatus.setText("● Disconnecting...");
+                    tvConnectionStatus.setTextColor(Color.parseColor("#F59E0B"));
+                    break;
+
+                case BluetoothProfile.STATE_DISCONNECTED:
+                default:
+                    tvConnectionStatus.setText("● Not Connected");
+                    tvConnectionStatus.setTextColor(Color.parseColor("#EF4444"));
+                    if (tvDeviceName != null) {
+                        tvDeviceName.setText("Tap to connect Bluetooth HID");
+                    }
+                    break;
+            }
+        });
+    }
+
+    private void openDeviceListDialog() {
+        performHaptic();
+        if (hidManager != null) {
+            DeviceListDialog.show(this, hidManager, device -> {
+                hidManager.connectDevice(device);
+                String name = "Device";
+                try {
+                    if (device != null && device.getName() != null) {
+                        name = device.getName();
+                    }
+                } catch (SecurityException ignored) {}
+                Toast.makeText(this, "Connecting to " + name + "...", Toast.LENGTH_SHORT).show();
+            });
+        } else {
+            Toast.makeText(this, "Bluetooth HID Manager is initializing...", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void bindClick(int id, View.OnClickListener listener) {
         View view = findViewById(id);
         if (view != null) {
-            view.setOnClickListener(listener);
+            view.setOnClickListener(v -> {
+                performHaptic();
+                listener.onClick(v);
+            });
         }
     }
 
     @SuppressLint({"MissingPermission"})
     private void setupControls() {
+        if (btnBluetooth != null) {
+            btnBluetooth.setOnClickListener(v -> openDeviceListDialog());
+        }
         if (tvDeviceName != null) {
-            tvDeviceName.setOnClickListener(v -> {
-                if (hidManager != null) {
-                    DeviceListDialog.show(this, hidManager, device -> {
-                        hidManager.connectDevice(device);
-                        String name = (device != null && device.getName() != null) ? device.getName() : "Device";
-                        Toast.makeText(this, "Connecting to " + name + "...", Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
+            tvDeviceName.setOnClickListener(v -> openDeviceListDialog());
+        }
+        if (tvConnectionStatus != null) {
+            tvConnectionStatus.setOnClickListener(v -> openDeviceListDialog());
         }
 
         if (btnAirMouse != null) {
-            btnAirMouse.setOnClickListener(v -> toggleAirMouse());
+            btnAirMouse.setOnClickListener(v -> {
+                performHaptic();
+                toggleAirMouse();
+            });
         }
 
         bindClick(R.id.btnSettings, v -> showSettingsDialog());
@@ -225,8 +393,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         bindClick(R.id.btnMute, v -> sendConsumer(0x00E2));
         bindClick(R.id.btnPlayPause, v -> sendConsumer(0x00CD));
 
-        View.OnClickListener leftClickListener = v -> sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
-        View.OnClickListener rightClickListener = v -> sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
+        View.OnClickListener leftClickListener = v -> {
+            performHaptic();
+            sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
+            mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
+        };
+        View.OnClickListener rightClickListener = v -> {
+            performHaptic();
+            sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
+            mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
+        };
 
         bindClick(R.id.btnLeftClickBottom, leftClickListener);
         bindClick(R.id.btnRightClickBottom, rightClickListener);
@@ -238,7 +414,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         bindClick(R.id.btnCopy, v -> sendShortcut((byte) 0x01, (byte) 0x06));
         bindClick(R.id.btnPaste, v -> sendShortcut((byte) 0x01, (byte) 0x19));
 
-        // Advanced Trackpad with Multi-Touch Gestures & Touch Trails
+        // Advanced Trackpad with Multi-Touch Gestures & Haptic Feedback
         if (layoutTrackpad instanceof AdvancedTrackpadView) {
             AdvancedTrackpadView trackpad = (AdvancedTrackpadView) layoutTrackpad;
             trackpad.setTrackpadEventListener(new AdvancedTrackpadView.TrackpadEventListener() {
@@ -255,19 +431,34 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 @Override
                 public void onLeftClick() {
+                    performHaptic();
                     sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
                     mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
                 }
 
                 @Override
                 public void onRightClick() {
+                    performHaptic();
                     sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
                     mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
                 }
 
                 @Override
                 public void onThreeFingerSwipe() {
+                    performHaptic();
                     sendShortcut((byte) 0x08, (byte) 0x2B); // Windows + Tab
+                }
+
+                @Override
+                public void onThreeFingerSwipe(int direction) {
+                    performHaptic();
+                    if (direction == AdvancedTrackpadView.SWIPE_DIRECTION_DOWN) {
+                        sendShortcut((byte) 0x08, (byte) 0x07); // Win + D (Show Desktop)
+                    } else if (direction == AdvancedTrackpadView.SWIPE_DIRECTION_LEFT || direction == AdvancedTrackpadView.SWIPE_DIRECTION_RIGHT) {
+                        sendShortcut((byte) 0x04, (byte) 0x2B); // Alt + Tab (Switch App)
+                    } else {
+                        sendShortcut((byte) 0x08, (byte) 0x2B); // Windows + Tab (Task View)
+                    }
                 }
             });
         }
@@ -276,15 +467,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupMediaRemoteControls();
         setupPresenterControls();
 
-        if (btnNavMouse != null) btnNavMouse.setOnClickListener(v -> switchMode("Mouse"));
-        if (btnNavKeyboard != null) btnNavKeyboard.setOnClickListener(v -> switchMode("Keyboard"));
-        if (btnNavMedia != null) btnNavMedia.setOnClickListener(v -> switchMode("Media"));
-        if (btnNavPresenter != null) btnNavPresenter.setOnClickListener(v -> switchMode("Presenter"));
+        if (btnNavMouse != null) btnNavMouse.setOnClickListener(v -> { performHaptic(); switchMode("Mouse"); });
+        if (btnNavKeyboard != null) btnNavKeyboard.setOnClickListener(v -> { performHaptic(); switchMode("Keyboard"); });
+        if (btnNavMedia != null) btnNavMedia.setOnClickListener(v -> { performHaptic(); switchMode("Media"); });
+        if (btnNavPresenter != null) btnNavPresenter.setOnClickListener(v -> { performHaptic(); switchMode("Presenter"); });
 
         if (btnNavMore != null) {
             btnNavMore.setOnClickListener(v -> {
+                performHaptic();
                 MoreBottomSheetDialog bottomSheet = new MoreBottomSheetDialog();
                 bottomSheet.setOnMenuSelectedListener(option -> {
+                    performHaptic();
                     switch (option) {
                         case "Keyboard":
                             switchMode("Keyboard");
@@ -298,6 +491,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         case "Settings":
                             showSettingsDialog();
                             break;
+                        case "Bluetooth":
+                        case "Bluetooth Devices":
+                        case "Bluetooth Manager":
+                            openDeviceListDialog();
+                            break;
                         default:
                             Toast.makeText(this, option + " selected", Toast.LENGTH_SHORT).show();
                             break;
@@ -305,6 +503,164 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 });
                 bottomSheet.show(getSupportFragmentManager(), "MoreBottomSheet");
             });
+        }
+    }
+
+    private void setupLiveTypingControls() {
+        etSendText = findViewById(R.id.etLiveInput);
+        if (etSendText == null) {
+            etSendText = findViewById(R.id.etSendText);
+        }
+
+        btnSendText = findViewById(R.id.btnLiveSend);
+        if (btnSendText == null) {
+            btnSendText = findViewById(R.id.btnSendText);
+        }
+
+        btnLiveMic = findViewById(R.id.btnLiveMic);
+
+        if (btnSendText != null) {
+            btnSendText.setOnClickListener(v -> {
+                performHaptic();
+                handleSendInputText();
+            });
+        }
+
+        if (btnLiveMic != null) {
+            btnLiveMic.setOnClickListener(v -> {
+                performHaptic();
+                try {
+                    Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now to type on laptop...");
+                    speechRecognizerLauncher.launch(intent);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Voice recognition not available on this device", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        if (etSendText != null) {
+            etSendText.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE
+                        || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
+                    performHaptic();
+                    handleSendInputText();
+                    return true;
+                }
+                return false;
+            });
+
+            etSendText.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (keyCode == KeyEvent.KEYCODE_DEL && etSendText.getText().length() == 0) {
+                        performHaptic();
+                        sendShortcut((byte) 0x00, (byte) 0x2A); // Backspace
+                        return true;
+                    } else if (keyCode == KeyEvent.KEYCODE_ENTER) {
+                        performHaptic();
+                        handleSendInputText();
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+    }
+
+    private void handleSendInputText() {
+        if (etSendText == null) return;
+        String text = etSendText.getText().toString();
+        if (!text.isEmpty()) {
+            sendStringToHid(text);
+            etSendText.setText("");
+        } else {
+            sendShortcut((byte) 0x00, (byte) 0x28); // Enter
+        }
+    }
+
+    public void sendStringToHid(String text) {
+        if (text == null || text.isEmpty()) return;
+        if (hidManager == null || hidManager.getConnectedDevice() == null) {
+            Toast.makeText(this, "No connected PC / Laptop. Pair via Bluetooth first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        long delayMs = 0;
+        final long stepMs = 55; // 55ms gives time for key down + key release reports
+
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            HidKey key = charToHidKey(ch);
+            if (key != null) {
+                mainHandler.postDelayed(() -> sendShortcut(key.modifier, key.keyCode), delayMs);
+                delayMs += stepMs;
+            }
+        }
+    }
+
+    private static class HidKey {
+        final byte modifier;
+        final byte keyCode;
+
+        HidKey(byte modifier, byte keyCode) {
+            this.modifier = modifier;
+            this.keyCode = keyCode;
+        }
+    }
+
+    private static HidKey charToHidKey(char c) {
+        if (c >= 'a' && c <= 'z') {
+            return new HidKey((byte) 0x00, (byte) (0x04 + (c - 'a')));
+        }
+        if (c >= 'A' && c <= 'Z') {
+            return new HidKey((byte) 0x02, (byte) (0x04 + (c - 'A'))); // Left Shift
+        }
+        if (c >= '1' && c <= '9') {
+            return new HidKey((byte) 0x00, (byte) (0x1E + (c - '1')));
+        }
+        if (c == '0') {
+            return new HidKey((byte) 0x00, (byte) 0x27);
+        }
+        switch (c) {
+            case ' ':  return new HidKey((byte) 0x00, (byte) 0x2C); // Space
+            case '\n':
+            case '\r': return new HidKey((byte) 0x00, (byte) 0x28); // Enter
+            case '\t': return new HidKey((byte) 0x00, (byte) 0x2B); // Tab
+            case '\b': return new HidKey((byte) 0x00, (byte) 0x2A); // Backspace
+            case '!':  return new HidKey((byte) 0x02, (byte) 0x1E);
+            case '@':  return new HidKey((byte) 0x02, (byte) 0x1F);
+            case '#':  return new HidKey((byte) 0x02, (byte) 0x20);
+            case '$':  return new HidKey((byte) 0x02, (byte) 0x21);
+            case '%':  return new HidKey((byte) 0x02, (byte) 0x22);
+            case '^':  return new HidKey((byte) 0x02, (byte) 0x23);
+            case '&':  return new HidKey((byte) 0x02, (byte) 0x24);
+            case '*':  return new HidKey((byte) 0x02, (byte) 0x25);
+            case '(':  return new HidKey((byte) 0x02, (byte) 0x26);
+            case ')':  return new HidKey((byte) 0x02, (byte) 0x27);
+            case '-':  return new HidKey((byte) 0x00, (byte) 0x2D);
+            case '_':  return new HidKey((byte) 0x02, (byte) 0x2D);
+            case '=':  return new HidKey((byte) 0x00, (byte) 0x2E);
+            case '+':  return new HidKey((byte) 0x02, (byte) 0x2E);
+            case '[':  return new HidKey((byte) 0x00, (byte) 0x2F);
+            case '{':  return new HidKey((byte) 0x02, (byte) 0x2F);
+            case ']':  return new HidKey((byte) 0x00, (byte) 0x30);
+            case '}':  return new HidKey((byte) 0x02, (byte) 0x30);
+            case '\\': return new HidKey((byte) 0x00, (byte) 0x31);
+            case '|':  return new HidKey((byte) 0x02, (byte) 0x31);
+            case ';':  return new HidKey((byte) 0x00, (byte) 0x33);
+            case ':':  return new HidKey((byte) 0x02, (byte) 0x33);
+            case '\'': return new HidKey((byte) 0x00, (byte) 0x34);
+            case '"':  return new HidKey((byte) 0x02, (byte) 0x34);
+            case '`':  return new HidKey((byte) 0x00, (byte) 0x35);
+            case '~':  return new HidKey((byte) 0x02, (byte) 0x35);
+            case ',':  return new HidKey((byte) 0x00, (byte) 0x36);
+            case '<':  return new HidKey((byte) 0x02, (byte) 0x36);
+            case '.':  return new HidKey((byte) 0x00, (byte) 0x37);
+            case '>':  return new HidKey((byte) 0x02, (byte) 0x37);
+            case '/':  return new HidKey((byte) 0x00, (byte) 0x38);
+            case '?':  return new HidKey((byte) 0x02, (byte) 0x38);
+            default:   return null;
         }
     }
 
@@ -420,12 +776,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         if (btnKeyCtrl != null) {
             btnKeyCtrl.setOnClickListener(v -> {
+                performHaptic();
                 isCtrlActive = !isCtrlActive;
                 btnKeyCtrl.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor(isCtrlActive ? "#2563EB" : "#334155")));
             });
         }
         if (btnKeyAlt != null) {
             btnKeyAlt.setOnClickListener(v -> {
+                performHaptic();
                 isAltActive = !isAltActive;
                 btnKeyAlt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor(isAltActive ? "#2563EB" : "#334155")));
             });
@@ -468,6 +826,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     private void showSettingsDialog() {
+        performHaptic();
         boolean isDark = ThemeManager.isDarkMode(this);
         String[] options = {
                 "Sensitivity: Slow (0.5x)",
@@ -482,22 +841,23 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         new AlertDialog.Builder(this)
                 .setTitle("BlueControl Settings")
                 .setItems(options, (dialog, which) -> {
+                    performHaptic();
                     switch (which) {
                         case 0:
                             mouseSensitivity = 0.5f;
-                            Toast.makeText(this, "Sensitivity updated", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Sensitivity updated to 0.5x", Toast.LENGTH_SHORT).show();
                             break;
                         case 1:
                             mouseSensitivity = 1.0f;
-                            Toast.makeText(this, "Sensitivity updated", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Sensitivity updated to 1.0x", Toast.LENGTH_SHORT).show();
                             break;
                         case 2:
                             mouseSensitivity = 1.5f;
-                            Toast.makeText(this, "Sensitivity updated", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Sensitivity updated to 1.5x", Toast.LENGTH_SHORT).show();
                             break;
                         case 3:
                             mouseSensitivity = 2.0f;
-                            Toast.makeText(this, "Sensitivity updated", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Sensitivity updated to 2.0x", Toast.LENGTH_SHORT).show();
                             break;
                         case 4:
                             clickButtonsOnTop = !clickButtonsOnTop;
@@ -553,6 +913,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onPause();
         if (isGyroActive) {
             toggleAirMouse();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        try {
+            unregisterReceiver(bluetoothStateReceiver);
+        } catch (Exception ignored) {}
+        if (hidManager != null) {
+            hidManager.cleanup(this);
         }
     }
 }
