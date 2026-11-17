@@ -58,7 +58,9 @@ public class DeviceListDialog {
 
         TextView btnDialogClose = dialog.findViewById(R.id.btnDialogClose);
         TextView tvHidStatus = dialog.findViewById(R.id.tvHidStatus);
+        TextView tvAutoReconnectStatus = dialog.findViewById(R.id.tvAutoReconnectStatus);
         TextView tvBtAdapterStatus = dialog.findViewById(R.id.tvBtAdapterStatus);
+        Button btnResetHid = dialog.findViewById(R.id.btnResetHid);
         Button btnEnableBt = dialog.findViewById(R.id.btnEnableBt);
         Button btnMakeDiscoverable = dialog.findViewById(R.id.btnMakeDiscoverable);
         Button btnOpenBtSettings = dialog.findViewById(R.id.btnOpenBtSettings);
@@ -68,6 +70,17 @@ public class DeviceListDialog {
 
         if (btnDialogClose != null) {
             btnDialogClose.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnResetHid != null) {
+            btnResetHid.setOnClickListener(v -> {
+                hidManager.forceResetRegistration();
+                Toast.makeText(context, "Resetting Bluetooth HID Service...", Toast.LENGTH_SHORT).show();
+                if (tvHidStatus != null) {
+                    tvHidStatus.setText("🟡 Resetting SDP profile...");
+                    tvHidStatus.setTextColor(Color.parseColor("#EAB308"));
+                }
+            });
         }
 
         Runnable updateStatus = () -> {
@@ -81,6 +94,17 @@ public class DeviceListDialog {
                     tvBtAdapterStatus.setText("Bluetooth Adapter: Disabled");
                     tvBtAdapterStatus.setTextColor(Color.parseColor("#EF4444"));
                     if (btnEnableBt != null) btnEnableBt.setVisibility(View.VISIBLE);
+                }
+            }
+
+            if (tvAutoReconnectStatus != null) {
+                String lastName = hidManager.getLastConnectedDeviceName();
+                if (lastName != null && !lastName.isEmpty()) {
+                    tvAutoReconnectStatus.setText("⚡ Auto-Reconnect: Active (" + lastName + ")");
+                    tvAutoReconnectStatus.setTextColor(Color.parseColor("#38BDF8"));
+                } else {
+                    tvAutoReconnectStatus.setText("⚡ Auto-Reconnect: Ready for next device");
+                    tvAutoReconnectStatus.setTextColor(Color.parseColor("#94A3B8"));
                 }
             }
 

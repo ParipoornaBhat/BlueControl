@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private BluetoothHidManager hidManager;
     private TextView tvHeaderTitle, tvConnectionStatus, tvDeviceName;
-    private View btnBluetooth;
+    private Button btnBluetooth;
     private View layoutTrackpad, layoutClickTop, layoutClickBottom;
     private View layoutMouseView, layoutKeyboardView, layoutMediaView, layoutPresenterView;
     private Button btnAirMouse, btnKeyCtrl, btnKeyAlt;
@@ -142,9 +142,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     case BluetoothAdapter.STATE_ON:
                         if (hidManager != null) {
                             hidManager.initProfileProxy(MainActivity.this);
+                            hidManager.retryRegistration();
+                            mainHandler.postDelayed(() -> hidManager.autoReconnect(), 1000);
                         }
                         updateConnectionStatusUI(null, BluetoothProfile.STATE_DISCONNECTED);
                         break;
+                }
+            } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
+                if (hidManager != null && !hidManager.isConnected()) {
+                    Log.d("MainActivity", "Screen turned ON. Triggering auto-reconnect...");
+                    hidManager.autoReconnect();
                 }
             }
         }
@@ -209,7 +216,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setupLiveTypingControls();
         checkAndRequestPermissions();
 
-        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        filter.addAction(Intent.ACTION_SCREEN_ON);
         registerReceiver(bluetoothStateReceiver, filter);
 
         // Default open Mouse / Trackpad view
@@ -269,12 +278,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @SuppressLint("MissingPermission")
     private void initBluetooth() {
         try {
-            if (hidManager == null) {
-                hidManager = new BluetoothHidManager(this);
-            } else {
-                hidManager.initProfileProxy(this);
-            }
-
+            hidManager = BluetoothHidManager.getInstance(this);
+            hidManager.initProfileProxy(this);
             hidManager.setConnectionListener(this::updateConnectionStatusUI);
 
             BluetoothDevice current = hidManager.getConnectedDevice();
@@ -283,6 +288,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 updateConnectionStatusUI(current, state != 0 ? state : BluetoothProfile.STATE_CONNECTED);
             } else {
                 updateConnectionStatusUI(null, BluetoothProfile.STATE_DISCONNECTED);
+                mainHandler.postDelayed(() -> {
+                    if (hidManager != null && !hidManager.isConnected()) {
+                        hidManager.autoReconnect();
+                    }
+                }, 800);
             }
         } catch (Exception ignored) {}
     }
@@ -306,6 +316,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     if (tvDeviceName != null) {
                         tvDeviceName.setText(name);
                     }
+                    if (btnBluetooth != null) {
+                        btnBluetooth.setText("⚡ DEVICES");
+                    }
                     break;
 
                 case BluetoothProfile.STATE_CONNECTING:
@@ -320,6 +333,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     if (tvDeviceName != null) {
                         tvDeviceName.setText(connectingName != null ? ("Connecting to " + connectingName + "...") : "Connecting to device...");
                     }
+                    if (btnBluetooth != null) {
+                        btnBluetooth.setText("⏳ PAIRING");
+                    }
                     break;
 
                 case BluetoothProfile.STATE_DISCONNECTING:
@@ -331,8 +347,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 default:
                     tvConnectionStatus.setText("● Not Connected");
                     tvConnectionStatus.setTextColor(Color.parseColor("#EF4444"));
-                    if (tvDeviceName != null) {
-                        tvDeviceName.setText("Tap to connect Bluetooth HID");
+                    String lastName = (hidManager != null) ? hidManager.getLastConnectedDeviceName() : null;
+                    if (lastName != null && !lastName.trim().isEmpty()) {
+                        if (tvDeviceName != null) {
+                            tvDeviceName.setText("Tap to connect: " + lastName);
+                        }
+                        if (btnBluetooth != null) {
+                            btnBluetooth.setText("⚡ RECONNECT");
+                        }
+                    } else {
+                        if (tvDeviceName != null) {
+                            tvDeviceName.setText("Tap to connect Bluetooth HID");
+                        }
+                        if (btnBluetooth != null) {
+                            btnBluetooth.setText("⚡ PAIR");
+                        }
                     }
                     break;
             }
@@ -370,10 +399,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @SuppressLint({"MissingPermission"})
     private void setupControls() {
         if (btnBluetooth != null) {
-            btnBluetooth.setOnClickListener(v -> openDeviceListDialog());
+            btnBluetooth.setOnClickListener(v -> {
+                performHaptic();
+                if (hidManager != null && !hidManager.isConnected() && hidManager.getLastConnectedDevice() != null) {
+                    Toast.makeText(this, "Connecting to " + hidManager.getLastConnectedDeviceName() + "...", Toast.LENGTH_SHORT).show();
+                    hidManager.autoReconnect();
+                } else {
+                    openDeviceListDialog();
+                }
+            });
+            btnBluetooth.setOnLongClickListener(v -> {
+                performHaptic();
+                openDeviceListDialog();
+                return true;
+            });
         }
         if (tvDeviceName != null) {
-            tvDeviceName.setOnClickListener(v -> openDeviceListDialog());
+            tvDeviceName.setOnClickListener(v -> {
+                performHaptic();
+                if (hidManager != null && !hidManager.isConnected() && hidManager.getLastConnectedDevice() != null) {
+                    Toast.makeText(this, "Connecting to " + hidManager.getLastConnectedDeviceName() + "...", Toast.LENGTH_SHORT).show();
+                    hidManager.autoReconnect();
+                } else {
+                    openDeviceListDialog();
+                }
+            });
         }
         if (tvConnectionStatus != null) {
             tvConnectionStatus.setOnClickListener(v -> openDeviceListDialog());
@@ -901,6 +951,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (hidManager != null) {
+            hidManager.initProfileProxy(this);
+            BluetoothDevice current = hidManager.getConnectedDevice();
+            if (current != null) {
+                int state = hidManager.getConnectionState(current);
+                updateConnectionStatusUI(current, state != 0 ? state : BluetoothProfile.STATE_CONNECTED);
+            } else {
+                updateConnectionStatusUI(null, BluetoothProfile.STATE_DISCONNECTED);
+                mainHandler.postDelayed(() -> {
+                    if (hidManager != null && !hidManager.isConnected()) {
+                        hidManager.autoReconnect();
+                    }
+                }, 500);
+            }
+        }
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         if (isGyroActive) {
@@ -914,8 +984,5 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         try {
             unregisterReceiver(bluetoothStateReceiver);
         } catch (Exception ignored) {}
-        if (hidManager != null) {
-            hidManager.cleanup(this);
-        }
     }
 }

@@ -32,6 +32,13 @@ public class BluetoothHidManager {
     public static final int STATE_CONNECTED = BluetoothProfile.STATE_CONNECTED;
     public static final int STATE_DISCONNECTING = BluetoothProfile.STATE_DISCONNECTING;
 
+    private static final String PREF_NAME = "bluecontrol_prefs";
+    private static final String PREF_LAST_DEVICE_MAC = "last_device_mac";
+    private static final String PREF_LAST_DEVICE_NAME = "last_device_name";
+    private static final String PREF_AUTO_RECONNECT = "auto_reconnect";
+
+    private static volatile BluetoothHidManager instance;
+
     private final Context appContext;
     private final BluetoothAdapter bluetoothAdapter;
     private BluetoothHidDevice hidDevice;
@@ -50,6 +57,17 @@ public class BluetoothHidManager {
 
     public interface AppRegistrationListener {
         void onAppRegistrationChanged(boolean registered);
+    }
+
+    public static BluetoothHidManager getInstance(Context context) {
+        if (instance == null) {
+            synchronized (BluetoothHidManager.class) {
+                if (instance == null) {
+                    instance = new BluetoothHidManager(context != null ? context.getApplicationContext() : null);
+                }
+            }
+        }
+        return instance;
     }
 
     public BluetoothHidManager(Context context) {
@@ -83,9 +101,94 @@ public class BluetoothHidManager {
                 hidDevice = null;
                 isAppRegistered = false;
                 notifyAppRegistration(false);
+                mainHandler.postDelayed(() -> {
+                    if (isBluetoothEnabled() && hidDevice == null) {
+                        initProfileProxy(appContext);
+                    }
+                }, 1000);
             }
         }
     };
+
+    public void saveLastConnectedDevice(BluetoothDevice device) {
+        if (device == null || appContext == null) return;
+        try {
+            String addr = device.getAddress();
+            String name = device.getName();
+            if (name == null || name.trim().isEmpty()) {
+                name = "Bluetooth Host";
+            }
+            appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString(PREF_LAST_DEVICE_MAC, addr)
+                    .putString(PREF_LAST_DEVICE_NAME, name)
+                    .apply();
+            Log.d(TAG, "Saved last connected device: " + name + " (" + addr + ")");
+        } catch (SecurityException se) {
+            Log.w(TAG, "Missing permission to save device name", se);
+        }
+    }
+
+    public BluetoothDevice getLastConnectedDevice() {
+        if (appContext == null || bluetoothAdapter == null) return null;
+        String mac = appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .getString(PREF_LAST_DEVICE_MAC, null);
+        if (mac == null || mac.trim().isEmpty()) return null;
+
+        try {
+            Set<BluetoothDevice> bonded = bluetoothAdapter.getBondedDevices();
+            if (bonded != null) {
+                for (BluetoothDevice d : bonded) {
+                    if (mac.equalsIgnoreCase(d.getAddress())) {
+                        return d;
+                    }
+                }
+            }
+            return bluetoothAdapter.getRemoteDevice(mac);
+        } catch (Exception e) {
+            Log.w(TAG, "Error resolving last connected device from MAC: " + mac, e);
+        }
+        return null;
+    }
+
+    public String getLastConnectedDeviceName() {
+        if (appContext == null) return null;
+        return appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .getString(PREF_LAST_DEVICE_NAME, null);
+    }
+
+    public boolean isAutoReconnectEnabled() {
+        if (appContext == null) return true;
+        return appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .getBoolean(PREF_AUTO_RECONNECT, true);
+    }
+
+    public void setAutoReconnectEnabled(boolean enabled) {
+        if (appContext == null) return;
+        appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(PREF_AUTO_RECONNECT, enabled)
+                .apply();
+    }
+
+    @SuppressLint("MissingPermission")
+    public void autoReconnect() {
+        if (!isAutoReconnectEnabled()) return;
+        if (connectedDevice != null) return;
+        if (!isBluetoothEnabled()) return;
+
+        if (!isAppRegistered) {
+            Log.d(TAG, "autoReconnect deferred: app not registered yet. Retrying registration...");
+            retryRegistration();
+            return;
+        }
+
+        BluetoothDevice last = getLastConnectedDevice();
+        if (last != null) {
+            Log.d(TAG, "autoReconnect attempting connection to " + last.getAddress());
+            connectDevice(last);
+        }
+    }
 
     @SuppressLint("MissingPermission")
     public boolean registerApp() {
@@ -93,6 +196,11 @@ public class BluetoothHidManager {
             Log.w(TAG, "Cannot register app: hidDevice is null. Trying to acquire proxy...");
             initProfileProxy(appContext);
             return false;
+        }
+
+        if (isAppRegistered) {
+            Log.d(TAG, "App is already registered.");
+            return true;
         }
 
         BluetoothHidDeviceAppSdpSettings sdpSettings = new BluetoothHidDeviceAppSdpSettings(
@@ -104,7 +212,26 @@ public class BluetoothHidManager {
         );
 
         try {
-            return hidDevice.registerApp(sdpSettings, null, null, executor, hidCallback);
+            boolean success = hidDevice.registerApp(sdpSettings, null, null, executor, hidCallback);
+            Log.d(TAG, "hidDevice.registerApp returned: " + success);
+            if (!success) {
+                Log.w(TAG, "registerApp returned false. Forcing unregister and retrying in 300ms...");
+                try {
+                    hidDevice.unregisterApp();
+                } catch (Exception ignored) {}
+
+                mainHandler.postDelayed(() -> {
+                    if (hidDevice != null && !isAppRegistered) {
+                        try {
+                            boolean retrySuccess = hidDevice.registerApp(sdpSettings, null, null, executor, hidCallback);
+                            Log.d(TAG, "registerApp second attempt returned: " + retrySuccess);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Retry registerApp failed", e);
+                        }
+                    }
+                }, 300);
+            }
+            return success;
         } catch (Exception e) {
             Log.e(TAG, "Failed to register HID app", e);
             return false;
@@ -113,7 +240,7 @@ public class BluetoothHidManager {
 
     @SuppressLint("MissingPermission")
     public void unregisterApp() {
-        if (hidDevice != null && isAppRegistered) {
+        if (hidDevice != null) {
             try {
                 hidDevice.unregisterApp();
             } catch (Exception e) {
@@ -121,6 +248,21 @@ public class BluetoothHidManager {
             }
             isAppRegistered = false;
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    public void forceResetRegistration() {
+        Log.d(TAG, "forceResetRegistration triggered.");
+        unregisterApp();
+        notifyAppRegistration(false);
+
+        mainHandler.postDelayed(() -> {
+            if (hidDevice != null) {
+                registerApp();
+            } else {
+                initProfileProxy(appContext);
+            }
+        }, 350);
     }
 
     public void retryRegistration() {
@@ -140,12 +282,17 @@ public class BluetoothHidManager {
 
             if (registered && pluggedDevice != null) {
                 connectedDevice = pluggedDevice;
+                saveLastConnectedDevice(pluggedDevice);
                 notifyConnectionState(pluggedDevice, BluetoothProfile.STATE_CONNECTED);
             } else if (!registered) {
                 connectedDevice = null;
             }
 
             notifyAppRegistration(registered);
+
+            if (registered && connectedDevice == null) {
+                mainHandler.postDelayed(BluetoothHidManager.this::autoReconnect, 500);
+            }
         }
 
         @SuppressLint("MissingPermission")
@@ -157,6 +304,7 @@ public class BluetoothHidManager {
             switch (state) {
                 case BluetoothProfile.STATE_CONNECTED:
                     connectedDevice = device;
+                    saveLastConnectedDevice(device);
                     break;
                 case BluetoothProfile.STATE_CONNECTING:
                     break;
@@ -166,6 +314,12 @@ public class BluetoothHidManager {
                     if (Objects.equals(connectedDevice, device)) {
                         connectedDevice = null;
                     }
+                    mainHandler.postDelayed(() -> {
+                        if (connectedDevice == null && isBluetoothEnabled() && isAppRegistered) {
+                            Log.d(TAG, "Attempting auto-reconnect retry after disconnect...");
+                            autoReconnect();
+                        }
+                    }, 2500);
                     break;
                 default:
                     break;
@@ -606,6 +760,11 @@ public class BluetoothHidManager {
 
     @SuppressLint("MissingPermission")
     public void cleanup(Context context) {
+        // Singleton proxy is preserved across transient Activity recreations
+    }
+
+    @SuppressLint("MissingPermission")
+    public void fullTeardown() {
         unregisterApp();
         if (bluetoothAdapter != null && hidDevice != null) {
             try {

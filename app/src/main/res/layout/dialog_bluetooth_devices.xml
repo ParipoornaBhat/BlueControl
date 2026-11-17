@@ -56,14 +56,43 @@
                 android:padding="12dp"
                 android:layout_marginBottom="12dp">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvHidStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🟢 HID Profile: Registered &amp; Ready"
+                        android:textColor="#22C55E"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btnResetHid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="🔄 Reset SDP"
+                        android:textColor="#FFFFFF"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:backgroundTint="#475569"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp" />
+                </LinearLayout>
+
                 <TextView
-                    android:id="@+id/tvHidStatus"
+                    android:id="@+id/tvAutoReconnectStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🟢 HID Profile: Registered &amp; Ready"
-                    android:textColor="#22C55E"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:text="⚡ Auto-Reconnect: Active"
+                    android:textColor="#38BDF8"
+                    android:textSize="11sp"
+                    android:paddingTop="3dp" />
 
                 <TextView
                     android:id="@+id/tvBtAdapterStatus"
@@ -72,7 +101,7 @@
                     android:text="Bluetooth Adapter: Enabled"
                     android:textColor="#94A3B8"
                     android:textSize="11sp"
-                    android:paddingTop="4dp" />
+                    android:paddingTop="3dp" />
 
                 <Button
                     android:id="@+id/btnEnableBt"
