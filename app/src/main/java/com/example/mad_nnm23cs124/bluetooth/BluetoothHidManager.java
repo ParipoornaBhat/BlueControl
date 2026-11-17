@@ -194,7 +194,7 @@ public class BluetoothHidManager {
                 byte[] empty = new byte[Math.max(1, Math.min(bufferSize > 0 ? bufferSize : 1, 8))];
                 hidDevice.replyReport(device, type, id, empty);
             } else {
-                hidDevice.reportError(device, BluetoothHidDevice.ERROR_RSP_NOT_SUPPORTED);
+                hidDevice.reportError(device, BluetoothHidDevice.ERROR_RSP_INVALID_RPT_ID);
             }
         }
 
