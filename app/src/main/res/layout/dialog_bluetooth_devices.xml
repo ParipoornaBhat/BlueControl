@@ -96,11 +96,6 @@
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:singleLine="true"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="9sp"
-                app:autoSizeMaxTextSize="12sp"
-                app:insetTop="0dp"
-                app:insetBottom="0dp"
                 android:backgroundTint="#2563EB"
                 android:layout_marginBottom="4dp" />
 
@@ -122,11 +117,6 @@
                 android:textColor="#FFFFFF"
                 android:textSize="12sp"
                 android:singleLine="true"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="9sp"
-                app:autoSizeMaxTextSize="12sp"
-                app:insetTop="0dp"
-                app:insetBottom="0dp"
                 android:backgroundTint="#334155"
                 android:layout_marginBottom="12dp" />
 
