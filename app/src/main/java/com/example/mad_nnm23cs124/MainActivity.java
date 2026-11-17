@@ -508,15 +508,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private void setupLiveTypingControls() {
         etSendText = findViewById(R.id.etLiveInput);
-        if (etSendText == null) {
-            etSendText = findViewById(R.id.etSendText);
-        }
-
         btnSendText = findViewById(R.id.btnLiveSend);
-        if (btnSendText == null) {
-            btnSendText = findViewById(R.id.btnSendText);
-        }
-
         btnLiveMic = findViewById(R.id.btnLiveMic);
 
         if (btnSendText != null) {

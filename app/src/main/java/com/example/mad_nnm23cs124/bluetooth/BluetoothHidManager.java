@@ -194,7 +194,7 @@ public class BluetoothHidManager {
                 byte[] empty = new byte[Math.max(1, Math.min(bufferSize > 0 ? bufferSize : 1, 8))];
                 hidDevice.replyReport(device, type, id, empty);
             } else {
-                hidDevice.reportError(device, BluetoothHidDevice.ERROR_RSP_NOT_HANDLED);
+                hidDevice.reportError(device, BluetoothHidDevice.ERROR_RSP_NOT_SUPPORTED);
             }
         }
 
@@ -219,8 +219,8 @@ public class BluetoothHidManager {
 
         @SuppressLint("MissingPermission")
         @Override
-        public void onIntrData(BluetoothDevice device, byte reportId, byte[] data) {
-            Log.d(TAG, "onIntrData device=" + (device != null ? device.getName() : "unknown") + ", reportId=" + reportId + ", len=" + (data != null ? data.length : 0));
+        public void onInterruptData(BluetoothDevice device, byte reportId, byte[] data) {
+            Log.d(TAG, "onInterruptData device=" + (device != null ? device.getName() : "unknown") + ", reportId=" + reportId + ", len=" + (data != null ? data.length : 0));
         }
 
         @SuppressLint("MissingPermission")
