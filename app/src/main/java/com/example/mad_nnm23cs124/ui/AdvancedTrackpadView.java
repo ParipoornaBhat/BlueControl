@@ -53,6 +53,7 @@ public class AdvancedTrackpadView extends View {
     private final Paint haloPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint ripplePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint dragHaloPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF boundsRect = new RectF();
 
     // Touch & Trail Pool (zero allocations in hot loops)
@@ -77,6 +78,14 @@ public class AdvancedTrackpadView extends View {
     private float touchSlop;
     private float swipeThreshold;
     private float scrollStepPx;
+
+    // Tap-and-Hold Drag (Double-Tap to Drag / Resize window)
+    private static final long DOUBLE_TAP_TIMEOUT_MS = 340;
+    private long lastTapUpTime = 0;
+    private float lastTapUpX = 0f, lastTapUpY = 0f;
+    private boolean isDragMode = false;
+    private boolean isDoubleTapPending = false;
+    private float doubleTapSlop;
 
     // 1-Finger cursor movement & acceleration
     private float lastX, lastY;
@@ -107,6 +116,11 @@ public class AdvancedTrackpadView extends View {
 
     public interface TrackpadEventListener {
         void onMouseMove(byte dx, byte dy);
+        default void onMouseDragStart() {}
+        default void onMouseDrag(byte dx, byte dy) {
+            onMouseMove(dx, dy);
+        }
+        default void onMouseDragEnd() {}
         void onMouseScroll(byte wheel);
         default void onMouseScroll(byte vWheel, byte hWheel) {
             onMouseScroll(vWheel);
@@ -143,6 +157,7 @@ public class AdvancedTrackpadView extends View {
         DisplayMetrics dm = context.getResources().getDisplayMetrics();
         swipeThreshold = 70f * dm.density;
         scrollStepPx = 14f * dm.density;
+        doubleTapSlop = touchSlop * 2.5f;
 
         // Pre-allocate point pool
         for (int i = 0; i < MAX_POOL_SIZE; i++) {
@@ -168,6 +183,10 @@ public class AdvancedTrackpadView extends View {
         ripplePaint.setColor(glowColor);
         ripplePaint.setStyle(Paint.Style.STROKE);
         ripplePaint.setStrokeWidth(2.5f * dm.density);
+
+        dragHaloPaint.setColor(glowColor);
+        dragHaloPaint.setStyle(Paint.Style.STROKE);
+        dragHaloPaint.setStrokeWidth(2.5f * dm.density);
     }
 
     public void setTrackpadEventListener(TrackpadEventListener listener) {
@@ -221,8 +240,14 @@ public class AdvancedTrackpadView extends View {
             float px = activePointerX[i];
             float py = activePointerY[i];
 
+            if (isDragMode && i == 0) {
+                // Outer accented drag latch ring
+                dragHaloPaint.setAlpha(200);
+                canvas.drawCircle(px, py, 34f, dragHaloPaint);
+            }
+
             // Outer soft glow halo
-            haloPaint.setAlpha(45);
+            haloPaint.setAlpha(isDragMode ? 85 : 45);
             canvas.drawCircle(px, py, 26f, haloPaint);
 
             // Inner core dot
@@ -295,11 +320,31 @@ public class AdvancedTrackpadView extends View {
                 smoothedDy = 0f;
                 lastScrollMidX = 0f;
                 lastScrollMidY = 0f;
+
+                // Check if this tap down is part of a double-tap-to-drag sequence
+                long timeSinceLastTap = eventTime - lastTapUpTime;
+                float distFromLastTap = (float) Math.hypot(touchDownX - lastTapUpX, touchDownY - lastTapUpY);
+                if (timeSinceLastTap < DOUBLE_TAP_TIMEOUT_MS && distFromLastTap < doubleTapSlop) {
+                    isDoubleTapPending = true;
+                    isDragMode = false;
+                } else {
+                    isDoubleTapPending = false;
+                    if (isDragMode) {
+                        isDragMode = false;
+                        if (listener != null) listener.onMouseDragEnd();
+                    }
+                }
+
                 invalidate();
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
                 stopInertia();
+                if (isDragMode) {
+                    isDragMode = false;
+                    isDoubleTapPending = false;
+                    if (listener != null) listener.onMouseDragEnd();
+                }
                 if (pointerCount == 2) {
                     lastScrollMidX = (event.getX(0) + event.getX(1)) / 2f;
                     lastScrollMidY = (event.getY(0) + event.getY(1)) / 2f;
@@ -325,11 +370,28 @@ public class AdvancedTrackpadView extends View {
                 }
 
                 if (pointerCount == 1) {
+                    // If double-tap is pending, latch into DRAG mode upon movement or hold
+                    if (isDoubleTapPending && !isDragMode) {
+                        float dragDisplacement = (float) Math.hypot(primaryX - touchDownX, primaryY - touchDownY);
+                        if (dragDisplacement > (touchSlop * 0.35f) || (eventTime - touchDownTime > 120)) {
+                            isDragMode = true;
+                            performHaptic(HAPTIC_HEAVY_CLICK);
+                            if (listener != null) {
+                                listener.onMouseDragStart();
+                            }
+                        }
+                    }
+
                     // Single finger move -> Smooth accelerated cursor motion
                     processCursorMovement(primaryX, primaryY, eventTime);
                     lastX = primaryX;
                     lastY = primaryY;
                 } else if (pointerCount == 2) {
+                    if (isDragMode) {
+                        isDragMode = false;
+                        isDoubleTapPending = false;
+                        if (listener != null) listener.onMouseDragEnd();
+                    }
                     // Two finger move -> Fluid vertical & horizontal scrolling
                     float midX = (event.getX(0) + event.getX(1)) / 2f;
                     float midY = (event.getY(0) + event.getY(1)) / 2f;
@@ -339,6 +401,11 @@ public class AdvancedTrackpadView extends View {
                     lastScrollMidX = midX;
                     lastScrollMidY = midY;
                 } else if (pointerCount >= 3) {
+                    if (isDragMode) {
+                        isDragMode = false;
+                        isDoubleTapPending = false;
+                        if (listener != null) listener.onMouseDragEnd();
+                    }
                     // Three finger swipe -> Win+Tab / App Switcher
                     float midX = (event.getX(0) + event.getX(1) + event.getX(2)) / 3f;
                     float midY = (event.getY(0) + event.getY(1) + event.getY(2)) / 3f;
@@ -363,25 +430,52 @@ public class AdvancedTrackpadView extends View {
             case MotionEvent.ACTION_UP:
                 long gestureDuration = eventTime - touchDownTime;
 
-                if (!movedBeyondSlop && gestureDuration < TAP_TIMEOUT_MS) {
-                    // Tap detection
-                    if (maxPointersInGesture == 1 && listener != null) {
-                        // 1-Finger Tap -> Left Click
+                if (isDragMode) {
+                    // Finished drag & pull -> release latch!
+                    isDragMode = false;
+                    isDoubleTapPending = false;
+                    lastTapUpTime = 0;
+                    performHaptic(HAPTIC_TAP);
+                    if (listener != null) {
+                        listener.onMouseDragEnd();
+                    }
+                } else if (isDoubleTapPending && !movedBeyondSlop) {
+                    // Double tap without pulling -> Standard Double Click
+                    isDoubleTapPending = false;
+                    lastTapUpTime = 0;
+                    performHaptic(HAPTIC_CLICK);
+                    spawnTapRipple(event.getX(), event.getY());
+                    if (listener != null) {
+                        listener.onLeftClick();
+                    }
+                } else if (!movedBeyondSlop && gestureDuration < TAP_TIMEOUT_MS) {
+                    // 1st Tap detection
+                    if (maxPointersInGesture == 1) {
+                        lastTapUpTime = eventTime;
+                        lastTapUpX = event.getX();
+                        lastTapUpY = event.getY();
                         performHaptic(HAPTIC_CLICK);
                         spawnTapRipple(event.getX(), event.getY());
-                        listener.onLeftClick();
-                    } else if (maxPointersInGesture == 2 && listener != null) {
-                        // 2-Finger Tap -> Right Click
+                        if (listener != null) {
+                            listener.onLeftClick();
+                        }
+                    } else if (maxPointersInGesture == 2) {
+                        lastTapUpTime = 0;
                         performHaptic(HAPTIC_HEAVY_CLICK);
                         spawnTapRipple(event.getX(), event.getY());
-                        listener.onRightClick();
+                        if (listener != null) {
+                            listener.onRightClick();
+                        }
                     }
                 } else if (maxPointersInGesture == 1 && movedBeyondSlop) {
                     // 1-Finger Fling -> Fluid Inertia
+                    lastTapUpTime = 0;
                     velocityTracker.computeCurrentVelocity(1000, maxFlingVelocity);
                     float vx = velocityTracker.getXVelocity();
                     float vy = velocityTracker.getYVelocity();
                     startInertia(vx, vy);
+                } else {
+                    lastTapUpTime = 0;
                 }
 
                 resetGestureState();
@@ -390,10 +484,17 @@ public class AdvancedTrackpadView extends View {
                 break;
 
             case MotionEvent.ACTION_CANCEL:
+                if (isDragMode) {
+                    isDragMode = false;
+                    if (listener != null) listener.onMouseDragEnd();
+                }
+                isDoubleTapPending = false;
+                lastTapUpTime = 0;
                 resetGestureState();
                 stopInertia();
                 invalidate();
                 break;
+        }
         }
 
         return true;
@@ -444,7 +545,11 @@ public class AdvancedTrackpadView extends View {
         sendY = Math.max(-127, Math.min(127, sendY));
 
         if ((sendX != 0 || sendY != 0) && listener != null) {
-            listener.onMouseMove((byte) sendX, (byte) sendY);
+            if (isDragMode) {
+                listener.onMouseDrag((byte) sendX, (byte) sendY);
+            } else {
+                listener.onMouseMove((byte) sendX, (byte) sendY);
+            }
         }
     }
 

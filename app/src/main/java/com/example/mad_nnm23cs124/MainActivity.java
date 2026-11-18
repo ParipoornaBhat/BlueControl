@@ -26,6 +26,7 @@ import android.os.VibratorManager;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -80,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private boolean isCtrlActive = false;
     private boolean isAltActive = false;
+    private boolean isLeftClickHeld = false;
+    private boolean isRightClickHeld = false;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -444,21 +447,55 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         bindClick(R.id.btnMute, v -> sendConsumer(0x00E2));
         bindClick(R.id.btnPlayPause, v -> sendConsumer(0x00CD));
 
-        View.OnClickListener leftClickListener = v -> {
-            performHaptic();
-            sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
-            mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
-        };
-        View.OnClickListener rightClickListener = v -> {
-            performHaptic();
-            sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
-            mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
+        View.OnTouchListener leftTouchListener = (v, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    isLeftClickHeld = true;
+                    performHaptic();
+                    v.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2563EB")));
+                    sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    isLeftClickHeld = false;
+                    performHaptic();
+                    v.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#1E293B")));
+                    sendMouse((byte) 0x00, (byte) 0, (byte) 0, (byte) 0);
+                    return true;
+            }
+            return false;
         };
 
-        bindClick(R.id.btnLeftClickBottom, leftClickListener);
-        bindClick(R.id.btnRightClickBottom, rightClickListener);
-        bindClick(R.id.btnLeftClickTop, leftClickListener);
-        bindClick(R.id.btnRightClickTop, rightClickListener);
+        View.OnTouchListener rightTouchListener = (v, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    isRightClickHeld = true;
+                    performHaptic();
+                    v.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2563EB")));
+                    sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    isRightClickHeld = false;
+                    performHaptic();
+                    v.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#1E293B")));
+                    sendMouse((byte) 0x00, (byte) 0, (byte) 0, (byte) 0);
+                    return true;
+            }
+            return false;
+        };
+
+        View btnLeftBottom = findViewById(R.id.btnLeftClickBottom);
+        if (btnLeftBottom != null) btnLeftBottom.setOnTouchListener(leftTouchListener);
+
+        View btnRightBottom = findViewById(R.id.btnRightClickBottom);
+        if (btnRightBottom != null) btnRightBottom.setOnTouchListener(rightTouchListener);
+
+        View btnLeftTop = findViewById(R.id.btnLeftClickTop);
+        if (btnLeftTop != null) btnLeftTop.setOnTouchListener(leftTouchListener);
+
+        View btnRightTop = findViewById(R.id.btnRightClickTop);
+        if (btnRightTop != null) btnRightTop.setOnTouchListener(rightTouchListener);
 
         bindClick(R.id.btnUndo, v -> sendShortcut((byte) 0x01, (byte) 0x1D));
         bindClick(R.id.btnRedo, v -> sendShortcut((byte) 0x01, (byte) 0x1C));
@@ -472,7 +509,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void onMouseMove(byte dx, byte dy) {
                     if (isGyroActive && disableTrackpadOnGyro) return;
-                    sendMouse((byte) 0, (byte) (dx * mouseSensitivity), (byte) (dy * mouseSensitivity), (byte) 0);
+                    byte buttons = 0;
+                    if (isLeftClickHeld) buttons |= 0x01;
+                    if (isRightClickHeld) buttons |= 0x02;
+                    sendMouse(buttons, (byte) (dx * mouseSensitivity), (byte) (dy * mouseSensitivity), (byte) 0);
+                }
+
+                @Override
+                public void onMouseDragStart() {
+                    performHaptic();
+                    sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
+                }
+
+                @Override
+                public void onMouseDrag(byte dx, byte dy) {
+                    if (isGyroActive && disableTrackpadOnGyro) return;
+                    sendMouse((byte) 0x01, (byte) (dx * mouseSensitivity), (byte) (dy * mouseSensitivity), (byte) 0);
+                }
+
+                @Override
+                public void onMouseDragEnd() {
+                    performHaptic();
+                    byte buttons = 0;
+                    if (isLeftClickHeld) buttons |= 0x01;
+                    if (isRightClickHeld) buttons |= 0x02;
+                    sendMouse(buttons, (byte) 0, (byte) 0, (byte) 0);
                 }
 
                 @Override
@@ -484,14 +545,24 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void onLeftClick() {
                     performHaptic();
                     sendMouse((byte) 0x01, (byte) 0, (byte) 0, (byte) 0);
-                    mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
+                    mainHandler.postDelayed(() -> {
+                        byte buttons = 0;
+                        if (isLeftClickHeld) buttons |= 0x01;
+                        if (isRightClickHeld) buttons |= 0x02;
+                        sendMouse(buttons, (byte) 0, (byte) 0, (byte) 0);
+                    }, 50);
                 }
 
                 @Override
                 public void onRightClick() {
                     performHaptic();
                     sendMouse((byte) 0x02, (byte) 0, (byte) 0, (byte) 0);
-                    mainHandler.postDelayed(() -> sendMouse((byte) 0, (byte) 0, (byte) 0, (byte) 0), 50);
+                    mainHandler.postDelayed(() -> {
+                        byte buttons = 0;
+                        if (isLeftClickHeld) buttons |= 0x01;
+                        if (isRightClickHeld) buttons |= 0x02;
+                        sendMouse(buttons, (byte) 0, (byte) 0, (byte) 0);
+                    }, 50);
                 }
 
                 @Override

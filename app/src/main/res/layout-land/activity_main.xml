@@ -150,7 +150,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:text="1 Finger: Move  •  2 Fingers: Scroll  •  3 Fingers: Tasks"
+                        android:text="1 Finger: Move  •  Double-Tap &amp; Pull: Drag/Resize  •  2 Fingers: Scroll"
                         android:textColor="#334155"
                         android:textSize="9sp"
                         android:clickable="false"
