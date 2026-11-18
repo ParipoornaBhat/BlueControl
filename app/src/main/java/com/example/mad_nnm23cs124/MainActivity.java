@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public static final String PREF_KEY_INVERT_GYRO_X = "gyro_invert_x";
     public static final String PREF_KEY_INVERT_GYRO_Y = "gyro_invert_y";
     public static final String PREF_KEY_SENSITIVITY = "mouse_sensitivity";
+    public static final String PREF_KEY_BUTTONS_ON_TOP = "buttons_on_top";
+    public static final String PREF_KEY_DISABLE_TRACKPAD_GYRO = "disable_trackpad_on_gyro";
 
     private float mouseSensitivity = 1.0f;
     private boolean invertScroll = true;
@@ -231,6 +233,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         invertGyroX = prefs.getBoolean(PREF_KEY_INVERT_GYRO_X, false);
         invertGyroY = prefs.getBoolean(PREF_KEY_INVERT_GYRO_Y, false);
         mouseSensitivity = prefs.getFloat(PREF_KEY_SENSITIVITY, 1.0f);
+        clickButtonsOnTop = prefs.getBoolean(PREF_KEY_BUTTONS_ON_TOP, false);
+        disableTrackpadOnGyro = prefs.getBoolean(PREF_KEY_DISABLE_TRACKPAD_GYRO, true);
+
+        if (layoutClickTop != null) layoutClickTop.setVisibility(clickButtonsOnTop ? View.VISIBLE : View.GONE);
+        if (layoutClickBottom != null) layoutClickBottom.setVisibility(clickButtonsOnTop ? View.GONE : View.VISIBLE);
 
         setupControls();
         setupLiveTypingControls();
@@ -1044,10 +1051,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             clickButtonsOnTop = !clickButtonsOnTop;
                             if (layoutClickTop != null) layoutClickTop.setVisibility(clickButtonsOnTop ? View.VISIBLE : View.GONE);
                             if (layoutClickBottom != null) layoutClickBottom.setVisibility(clickButtonsOnTop ? View.GONE : View.VISIBLE);
+                            prefs.edit().putBoolean(PREF_KEY_BUTTONS_ON_TOP, clickButtonsOnTop).apply();
                             Toast.makeText(this, "Click buttons moved to " + (clickButtonsOnTop ? "Top" : "Bottom"), Toast.LENGTH_SHORT).show();
                             break;
                         case 8:
                             disableTrackpadOnGyro = !disableTrackpadOnGyro;
+                            prefs.edit().putBoolean(PREF_KEY_DISABLE_TRACKPAD_GYRO, disableTrackpadOnGyro).apply();
                             Toast.makeText(this, "Disable trackpad on Gyro: " + disableTrackpadOnGyro, Toast.LENGTH_SHORT).show();
                             break;
                         case 9:
@@ -1105,8 +1114,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     break;
             }
 
-            // Normal vs Inverted: flipped from old opposite signs
-            float signX = invertGyroX ? -1.0f : 1.0f;
+            // Normal vs Inverted: matching natural pointer direction
+            float signX = invertGyroX ? 1.0f : -1.0f;
             float signY = invertGyroY ? 1.0f : -1.0f;
 
             byte dx = (byte) (signX * hAxis * 10.0f * mouseSensitivity);
