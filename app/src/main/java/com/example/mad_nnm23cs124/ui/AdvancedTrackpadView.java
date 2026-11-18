@@ -97,6 +97,7 @@ public class AdvancedTrackpadView extends View {
     // 2-Finger scroll state
     private float lastScrollMidX, lastScrollMidY;
     private float accumulatedScrollY = 0f, accumulatedScrollX = 0f;
+    private boolean invertScroll = true;
 
     // 3-Finger swipe state
     private float threeFingerStartX, threeFingerStartY;
@@ -195,6 +196,14 @@ public class AdvancedTrackpadView extends View {
 
     public void setSensitivity(float sensitivity) {
         this.sensitivity = Math.max(0.2f, Math.min(3.0f, sensitivity));
+    }
+
+    public void setInvertScroll(boolean invert) {
+        this.invertScroll = invert;
+    }
+
+    public boolean isInvertScroll() {
+        return invertScroll;
     }
 
     public void setHapticEnabled(boolean enabled) {
@@ -495,7 +504,6 @@ public class AdvancedTrackpadView extends View {
                 invalidate();
                 break;
         }
-        }
 
         return true;
     }
@@ -563,8 +571,8 @@ public class AdvancedTrackpadView extends View {
         if (Math.abs(accumulatedScrollY) >= scrollStepPx) {
             int stepsY = (int) (accumulatedScrollY / scrollStepPx);
             accumulatedScrollY -= stepsY * scrollStepPx;
-            // Swiping fingers up on trackpad scrolls up (positive wheel)
-            vWheel = (byte) (-stepsY);
+            // Configurable scroll direction: invertScroll = true gives natural touch scrolling
+            vWheel = (byte) (invertScroll ? stepsY : -stepsY);
         }
 
         if (Math.abs(accumulatedScrollX) >= scrollStepPx) {

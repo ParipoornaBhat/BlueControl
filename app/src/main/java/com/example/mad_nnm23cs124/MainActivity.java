@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -27,6 +28,7 @@ import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -75,7 +77,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private SensorManager sensorManager;
     private Sensor gyroSensor;
     private boolean isGyroActive = false;
+    public static final String PREF_KEY_INVERT_SCROLL = "trackpad_invert_scroll";
+    public static final String PREF_KEY_INVERT_GYRO_X = "gyro_invert_x";
+    public static final String PREF_KEY_INVERT_GYRO_Y = "gyro_invert_y";
+    public static final String PREF_KEY_SENSITIVITY = "mouse_sensitivity";
+
     private float mouseSensitivity = 1.0f;
+    private boolean invertScroll = true;
+    private boolean invertGyroX = false;
+    private boolean invertGyroY = false;
     private boolean clickButtonsOnTop = false;
     private boolean disableTrackpadOnGyro = true;
 
@@ -215,6 +225,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } catch (Exception ignored) {
             gyroSensor = null;
         }
+
+        SharedPreferences prefs = getSharedPreferences(ThemeManager.PREF_NAME, Context.MODE_PRIVATE);
+        invertScroll = prefs.getBoolean(PREF_KEY_INVERT_SCROLL, true);
+        invertGyroX = prefs.getBoolean(PREF_KEY_INVERT_GYRO_X, false);
+        invertGyroY = prefs.getBoolean(PREF_KEY_INVERT_GYRO_Y, false);
+        mouseSensitivity = prefs.getFloat(PREF_KEY_SENSITIVITY, 1.0f);
 
         setupControls();
         setupLiveTypingControls();
@@ -438,6 +454,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 performHaptic();
                 toggleAirMouse();
             });
+            btnAirMouse.setOnLongClickListener(v -> {
+                performHaptic();
+                invertGyroX = !invertGyroX;
+                invertGyroY = !invertGyroY;
+                SharedPreferences p = getSharedPreferences(ThemeManager.PREF_NAME, Context.MODE_PRIVATE);
+                p.edit().putBoolean(PREF_KEY_INVERT_GYRO_X, invertGyroX)
+                        .putBoolean(PREF_KEY_INVERT_GYRO_Y, invertGyroY).apply();
+                Toast.makeText(this, "Air Mouse axes flipped (" + (invertGyroX ? "Inverted" : "Normal") + ")", Toast.LENGTH_SHORT).show();
+                return true;
+            });
         }
 
         bindClick(R.id.btnSettings, v -> showSettingsDialog());
@@ -505,6 +531,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // Advanced Trackpad with Multi-Touch Gestures & Haptic Feedback
         if (layoutTrackpad instanceof AdvancedTrackpadView) {
             AdvancedTrackpadView trackpad = (AdvancedTrackpadView) layoutTrackpad;
+            trackpad.setInvertScroll(invertScroll);
+            trackpad.setSensitivity(mouseSensitivity);
             trackpad.setTrackpadEventListener(new AdvancedTrackpadView.TrackpadEventListener() {
                 @Override
                 public void onMouseMove(byte dx, byte dy) {
@@ -942,7 +970,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private void showSettingsDialog() {
         performHaptic();
         boolean isDark = ThemeManager.isDarkMode(this);
+        SharedPreferences prefs = getSharedPreferences(ThemeManager.PREF_NAME, Context.MODE_PRIVATE);
+
         String[] options = {
+                "Scroll Direction: " + (invertScroll ? "Natural (Down scrolls Down)" : "Traditional (Down scrolls Up)"),
+                "Gyroscope X (Horizontal): " + (invertGyroX ? "Inverted" : "Normal"),
+                "Gyroscope Y (Vertical): " + (invertGyroY ? "Inverted" : "Normal"),
                 "Sensitivity: Slow (0.5x)",
                 "Sensitivity: Normal (1.0x)",
                 "Sensitivity: Fast (1.5x)",
@@ -958,32 +991,66 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     performHaptic();
                     switch (which) {
                         case 0:
-                            mouseSensitivity = 0.5f;
-                            Toast.makeText(this, "Sensitivity updated to 0.5x", Toast.LENGTH_SHORT).show();
+                            invertScroll = !invertScroll;
+                            if (layoutTrackpad instanceof AdvancedTrackpadView) {
+                                ((AdvancedTrackpadView) layoutTrackpad).setInvertScroll(invertScroll);
+                            }
+                            prefs.edit().putBoolean(PREF_KEY_INVERT_SCROLL, invertScroll).apply();
+                            Toast.makeText(this, "Scroll Direction: " + (invertScroll ? "Natural" : "Traditional"), Toast.LENGTH_SHORT).show();
                             break;
                         case 1:
-                            mouseSensitivity = 1.0f;
-                            Toast.makeText(this, "Sensitivity updated to 1.0x", Toast.LENGTH_SHORT).show();
+                            invertGyroX = !invertGyroX;
+                            prefs.edit().putBoolean(PREF_KEY_INVERT_GYRO_X, invertGyroX).apply();
+                            Toast.makeText(this, "Gyro X Direction: " + (invertGyroX ? "Inverted" : "Normal"), Toast.LENGTH_SHORT).show();
                             break;
                         case 2:
-                            mouseSensitivity = 1.5f;
-                            Toast.makeText(this, "Sensitivity updated to 1.5x", Toast.LENGTH_SHORT).show();
+                            invertGyroY = !invertGyroY;
+                            prefs.edit().putBoolean(PREF_KEY_INVERT_GYRO_Y, invertGyroY).apply();
+                            Toast.makeText(this, "Gyro Y Direction: " + (invertGyroY ? "Inverted" : "Normal"), Toast.LENGTH_SHORT).show();
                             break;
                         case 3:
-                            mouseSensitivity = 2.0f;
-                            Toast.makeText(this, "Sensitivity updated to 2.0x", Toast.LENGTH_SHORT).show();
+                            mouseSensitivity = 0.5f;
+                            prefs.edit().putFloat(PREF_KEY_SENSITIVITY, mouseSensitivity).apply();
+                            if (layoutTrackpad instanceof AdvancedTrackpadView) {
+                                ((AdvancedTrackpadView) layoutTrackpad).setSensitivity(mouseSensitivity);
+                            }
+                            Toast.makeText(this, "Sensitivity updated to 0.5x", Toast.LENGTH_SHORT).show();
                             break;
                         case 4:
+                            mouseSensitivity = 1.0f;
+                            prefs.edit().putFloat(PREF_KEY_SENSITIVITY, mouseSensitivity).apply();
+                            if (layoutTrackpad instanceof AdvancedTrackpadView) {
+                                ((AdvancedTrackpadView) layoutTrackpad).setSensitivity(mouseSensitivity);
+                            }
+                            Toast.makeText(this, "Sensitivity updated to 1.0x", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 5:
+                            mouseSensitivity = 1.5f;
+                            prefs.edit().putFloat(PREF_KEY_SENSITIVITY, mouseSensitivity).apply();
+                            if (layoutTrackpad instanceof AdvancedTrackpadView) {
+                                ((AdvancedTrackpadView) layoutTrackpad).setSensitivity(mouseSensitivity);
+                            }
+                            Toast.makeText(this, "Sensitivity updated to 1.5x", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 6:
+                            mouseSensitivity = 2.0f;
+                            prefs.edit().putFloat(PREF_KEY_SENSITIVITY, mouseSensitivity).apply();
+                            if (layoutTrackpad instanceof AdvancedTrackpadView) {
+                                ((AdvancedTrackpadView) layoutTrackpad).setSensitivity(mouseSensitivity);
+                            }
+                            Toast.makeText(this, "Sensitivity updated to 2.0x", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 7:
                             clickButtonsOnTop = !clickButtonsOnTop;
                             if (layoutClickTop != null) layoutClickTop.setVisibility(clickButtonsOnTop ? View.VISIBLE : View.GONE);
                             if (layoutClickBottom != null) layoutClickBottom.setVisibility(clickButtonsOnTop ? View.GONE : View.VISIBLE);
                             Toast.makeText(this, "Click buttons moved to " + (clickButtonsOnTop ? "Top" : "Bottom"), Toast.LENGTH_SHORT).show();
                             break;
-                        case 5:
+                        case 8:
                             disableTrackpadOnGyro = !disableTrackpadOnGyro;
                             Toast.makeText(this, "Disable trackpad on Gyro: " + disableTrackpadOnGyro, Toast.LENGTH_SHORT).show();
                             break;
-                        case 6:
+                        case 9:
                             ThemeManager.setDarkMode(this, !isDark);
                             recreate();
                             break;
@@ -1007,11 +1074,43 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (isGyroActive && event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            float gyroX = event.values[1];
-            float gyroY = event.values[0];
+            int rotation = Surface.ROTATION_0;
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    rotation = getDisplay() != null ? getDisplay().getRotation() : Surface.ROTATION_0;
+                } else {
+                    rotation = getWindowManager().getDefaultDisplay().getRotation();
+                }
+            } catch (Exception ignored) {}
 
-            byte dx = (byte) (-gyroX * 10.0f * mouseSensitivity);
-            byte dy = (byte) (gyroY * 10.0f * mouseSensitivity);
+            float rawX = event.values[1]; // roll/yaw in portrait
+            float rawY = event.values[0]; // pitch in portrait
+
+            float hAxis = rawX;
+            float vAxis = rawY;
+
+            // Handle device display rotation dynamically
+            switch (rotation) {
+                case Surface.ROTATION_90:
+                    hAxis = -rawY;
+                    vAxis = rawX;
+                    break;
+                case Surface.ROTATION_180:
+                    hAxis = -rawX;
+                    vAxis = -rawY;
+                    break;
+                case Surface.ROTATION_270:
+                    hAxis = rawY;
+                    vAxis = -rawX;
+                    break;
+            }
+
+            // Normal vs Inverted: flipped from old opposite signs
+            float signX = invertGyroX ? -1.0f : 1.0f;
+            float signY = invertGyroY ? 1.0f : -1.0f;
+
+            byte dx = (byte) (signX * hAxis * 10.0f * mouseSensitivity);
+            byte dy = (byte) (signY * vAxis * 10.0f * mouseSensitivity);
 
             if (dx != 0 || dy != 0) {
                 sendMouse((byte) 0, dx, dy, (byte) 0);

@@ -114,7 +114,7 @@ public class ThemeManager {
     @ColorInt
     public static int getTrackpadSurfaceColor(@NonNull Context context) {
         if (isDarkMode(context)) {
-            return Color.parseColor("#0F172A"); // Slate 900
+            return Color.parseColor("#0A0D14"); // Obsidian 950
         } else {
             return Color.parseColor("#F8FAFC"); // Slate 50
         }
@@ -126,7 +126,7 @@ public class ThemeManager {
     @ColorInt
     public static int getTrackpadGridColor(@NonNull Context context) {
         if (isDarkMode(context)) {
-            return Color.parseColor("#1E293B"); // Slate 800
+            return Color.parseColor("#171C27"); // Deep slate border
         } else {
             return Color.parseColor("#E2E8F0"); // Slate 200
         }
