@@ -26,6 +26,9 @@ import android.os.Vibrator;
 import android.os.VibratorManager;
 import android.speech.RecognizerIntent;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -65,7 +68,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Button btnBluetooth;
     private View layoutTrackpad, layoutClickTop, layoutClickBottom;
     private View layoutMouseView, layoutKeyboardView, layoutMediaView, layoutPresenterView;
-    private Button btnAirMouse, btnKeyCtrl, btnKeyAlt;
+    private View layoutHeaderCard, layoutVolumeControls, layoutBottomNav;
+    private Button btnAirMouse, btnKeyCtrl, btnKeyAlt, btnFullscreenToggle, btnExitFullscreen;
     private TextView btnNavMouse, btnNavKeyboard, btnNavMedia, btnNavPresenter, btnNavMore;
 
     // Live Mobile Typing & Speech-to-Text Input Bar
@@ -83,7 +87,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public static final String PREF_KEY_SENSITIVITY = "mouse_sensitivity";
     public static final String PREF_KEY_BUTTONS_ON_TOP = "buttons_on_top";
     public static final String PREF_KEY_DISABLE_TRACKPAD_GYRO = "disable_trackpad_on_gyro";
+    public static final String PREF_KEY_BUTTON_HEIGHT = "click_button_height";
 
+    private int buttonHeightDp = 56;
+    private boolean isFullscreenTrackpad = false;
     private float mouseSensitivity = 1.0f;
     private boolean invertScroll = true;
     private boolean invertGyroX = false;
@@ -200,6 +207,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         tvDeviceName = findViewById(R.id.tvDeviceName);
         btnBluetooth = findViewById(R.id.btnBluetooth);
 
+        layoutHeaderCard = findViewById(R.id.layoutHeaderCard);
+        layoutVolumeControls = findViewById(R.id.layoutVolumeControls);
+        layoutBottomNav = findViewById(R.id.layoutBottomNav);
+        btnFullscreenToggle = findViewById(R.id.btnFullscreenToggle);
+        btnExitFullscreen = findViewById(R.id.btnExitFullscreen);
+
+        if (btnFullscreenToggle != null) {
+            btnFullscreenToggle.setOnClickListener(v -> toggleFullscreenTrackpad());
+        }
+        if (btnExitFullscreen != null) {
+            btnExitFullscreen.setOnClickListener(v -> toggleFullscreenTrackpad());
+        }
+
         layoutMouseView = findViewById(R.id.layoutMouseView);
         layoutKeyboardView = findViewById(R.id.layoutKeyboardView);
         layoutMediaView = findViewById(R.id.layoutMediaView);
@@ -235,9 +255,25 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mouseSensitivity = prefs.getFloat(PREF_KEY_SENSITIVITY, 1.0f);
         clickButtonsOnTop = prefs.getBoolean(PREF_KEY_BUTTONS_ON_TOP, false);
         disableTrackpadOnGyro = prefs.getBoolean(PREF_KEY_DISABLE_TRACKPAD_GYRO, true);
+        buttonHeightDp = prefs.getInt(PREF_KEY_BUTTON_HEIGHT, 56);
+        applyButtonHeight(buttonHeightDp);
 
         if (layoutClickTop != null) layoutClickTop.setVisibility(clickButtonsOnTop ? View.VISIBLE : View.GONE);
         if (layoutClickBottom != null) layoutClickBottom.setVisibility(clickButtonsOnTop ? View.GONE : View.VISIBLE);
+
+        // Fluid Staggered Entrance Animation (Dribbble Fintech Style)
+        if (layoutHeaderCard != null) {
+            layoutHeaderCard.setTranslationY(-28f);
+            layoutHeaderCard.setAlpha(0f);
+            layoutHeaderCard.animate().translationY(0f).alpha(1f).setDuration(450)
+                    .setInterpolator(new DecelerateInterpolator()).start();
+        }
+        if (layoutBottomNav != null) {
+            layoutBottomNav.setTranslationY(35f);
+            layoutBottomNav.setAlpha(0f);
+            layoutBottomNav.animate().translationY(0f).alpha(1f).setDuration(550).setStartDelay(100)
+                    .setInterpolator(new OvershootInterpolator(1.2f)).start();
+        }
 
         setupControls();
         setupLiveTypingControls();
@@ -636,14 +672,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 bottomSheet.setOnMenuSelectedListener(option -> {
                     performHaptic();
                     switch (option) {
-                        case "Keyboard":
-                            switchMode("Keyboard");
+                        case "Fullscreen":
+                            toggleFullscreenTrackpad();
                             break;
-                        case "Media":
-                            switchMode("Media");
-                            break;
-                        case "Presenter":
-                            switchMode("Presenter");
+                        case "AdjustSize":
+                            showButtonSizeDialog();
                             break;
                         case "Settings":
                             showSettingsDialog();
@@ -980,6 +1013,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         SharedPreferences prefs = getSharedPreferences(ThemeManager.PREF_NAME, Context.MODE_PRIVATE);
 
         String[] options = {
+                "Trackpad Full-Screen: " + (isFullscreenTrackpad ? "Active (Exit)" : "Open Fullscreen"),
+                "Customize Button Size: " + buttonHeightDp + "dp",
                 "Scroll Direction: " + (invertScroll ? "Natural (Down scrolls Down)" : "Traditional (Down scrolls Up)"),
                 "Gyroscope X (Horizontal): " + (invertGyroX ? "Inverted" : "Normal"),
                 "Gyroscope Y (Vertical): " + (invertGyroY ? "Inverted" : "Normal"),
@@ -998,6 +1033,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     performHaptic();
                     switch (which) {
                         case 0:
+                            toggleFullscreenTrackpad();
+                            break;
+                        case 1:
+                            showButtonSizeDialog();
+                            break;
+                        case 2:
                             invertScroll = !invertScroll;
                             if (layoutTrackpad instanceof AdvancedTrackpadView) {
                                 ((AdvancedTrackpadView) layoutTrackpad).setInvertScroll(invertScroll);
@@ -1005,17 +1046,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             prefs.edit().putBoolean(PREF_KEY_INVERT_SCROLL, invertScroll).apply();
                             Toast.makeText(this, "Scroll Direction: " + (invertScroll ? "Natural" : "Traditional"), Toast.LENGTH_SHORT).show();
                             break;
-                        case 1:
+                        case 3:
                             invertGyroX = !invertGyroX;
                             prefs.edit().putBoolean(PREF_KEY_INVERT_GYRO_X, invertGyroX).apply();
                             Toast.makeText(this, "Gyro X Direction: " + (invertGyroX ? "Inverted" : "Normal"), Toast.LENGTH_SHORT).show();
                             break;
-                        case 2:
+                        case 4:
                             invertGyroY = !invertGyroY;
                             prefs.edit().putBoolean(PREF_KEY_INVERT_GYRO_Y, invertGyroY).apply();
                             Toast.makeText(this, "Gyro Y Direction: " + (invertGyroY ? "Inverted" : "Normal"), Toast.LENGTH_SHORT).show();
                             break;
-                        case 3:
+                        case 5:
                             mouseSensitivity = 0.5f;
                             prefs.edit().putFloat(PREF_KEY_SENSITIVITY, mouseSensitivity).apply();
                             if (layoutTrackpad instanceof AdvancedTrackpadView) {
@@ -1023,7 +1064,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             }
                             Toast.makeText(this, "Sensitivity updated to 0.5x", Toast.LENGTH_SHORT).show();
                             break;
-                        case 4:
+                        case 6:
                             mouseSensitivity = 1.0f;
                             prefs.edit().putFloat(PREF_KEY_SENSITIVITY, mouseSensitivity).apply();
                             if (layoutTrackpad instanceof AdvancedTrackpadView) {
@@ -1031,7 +1072,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             }
                             Toast.makeText(this, "Sensitivity updated to 1.0x", Toast.LENGTH_SHORT).show();
                             break;
-                        case 5:
+                        case 7:
                             mouseSensitivity = 1.5f;
                             prefs.edit().putFloat(PREF_KEY_SENSITIVITY, mouseSensitivity).apply();
                             if (layoutTrackpad instanceof AdvancedTrackpadView) {
@@ -1039,7 +1080,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             }
                             Toast.makeText(this, "Sensitivity updated to 1.5x", Toast.LENGTH_SHORT).show();
                             break;
-                        case 6:
+                        case 8:
                             mouseSensitivity = 2.0f;
                             prefs.edit().putFloat(PREF_KEY_SENSITIVITY, mouseSensitivity).apply();
                             if (layoutTrackpad instanceof AdvancedTrackpadView) {
@@ -1047,25 +1088,94 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             }
                             Toast.makeText(this, "Sensitivity updated to 2.0x", Toast.LENGTH_SHORT).show();
                             break;
-                        case 7:
+                        case 9:
                             clickButtonsOnTop = !clickButtonsOnTop;
                             if (layoutClickTop != null) layoutClickTop.setVisibility(clickButtonsOnTop ? View.VISIBLE : View.GONE);
                             if (layoutClickBottom != null) layoutClickBottom.setVisibility(clickButtonsOnTop ? View.GONE : View.VISIBLE);
                             prefs.edit().putBoolean(PREF_KEY_BUTTONS_ON_TOP, clickButtonsOnTop).apply();
                             Toast.makeText(this, "Click buttons moved to " + (clickButtonsOnTop ? "Top" : "Bottom"), Toast.LENGTH_SHORT).show();
                             break;
-                        case 8:
+                        case 10:
                             disableTrackpadOnGyro = !disableTrackpadOnGyro;
                             prefs.edit().putBoolean(PREF_KEY_DISABLE_TRACKPAD_GYRO, disableTrackpadOnGyro).apply();
                             Toast.makeText(this, "Disable trackpad on Gyro: " + disableTrackpadOnGyro, Toast.LENGTH_SHORT).show();
                             break;
-                        case 9:
+                        case 11:
                             ThemeManager.setDarkMode(this, !isDark);
                             recreate();
                             break;
                     }
                 })
                 .show();
+    }
+
+    private void toggleFullscreenTrackpad() {
+        performHaptic();
+        isFullscreenTrackpad = !isFullscreenTrackpad;
+
+        if (isFullscreenTrackpad) {
+            if (layoutHeaderCard != null) layoutHeaderCard.setVisibility(View.GONE);
+            if (layoutVolumeControls != null) layoutVolumeControls.setVisibility(View.GONE);
+            if (layoutBottomNav != null) layoutBottomNav.setVisibility(View.GONE);
+            if (btnExitFullscreen != null) btnExitFullscreen.setVisibility(View.VISIBLE);
+            Toast.makeText(this, "Full-Screen Trackpad active (Tap ✕ to exit)", Toast.LENGTH_SHORT).show();
+        } else {
+            if (layoutHeaderCard != null) layoutHeaderCard.setVisibility(View.VISIBLE);
+            if (layoutVolumeControls != null) layoutVolumeControls.setVisibility(View.VISIBLE);
+            if (layoutBottomNav != null) layoutBottomNav.setVisibility(View.VISIBLE);
+            if (btnExitFullscreen != null) btnExitFullscreen.setVisibility(View.GONE);
+        }
+    }
+
+    private void applyButtonHeight(int heightDp) {
+        buttonHeightDp = heightDp;
+        int heightPx = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, heightDp, getResources().getDisplayMetrics());
+
+        if (layoutClickBottom != null) {
+            layoutClickBottom.getLayoutParams().height = heightPx;
+            layoutClickBottom.requestLayout();
+        }
+        if (layoutClickTop != null) {
+            layoutClickTop.getLayoutParams().height = heightPx;
+            layoutClickTop.requestLayout();
+        }
+
+        SharedPreferences prefs = getSharedPreferences(ThemeManager.PREF_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putInt(PREF_KEY_BUTTON_HEIGHT, buttonHeightDp).apply();
+    }
+
+    private void showButtonSizeDialog() {
+        performHaptic();
+        String[] sizeOptions = {
+                "Compact (44dp) — Maximum Trackpad Area",
+                "Standard (56dp) — Default Balanced",
+                "Medium (75dp) — Comfortable Thumb Targets",
+                "Large (100dp) — Big Buttons for Quick Taps",
+                "Chunky (130dp) — Extra Large Targets",
+                "Split-Screen (170dp) — 50/50 Button & Trackpad"
+        };
+        int[] heights = { 44, 56, 75, 100, 130, 170 };
+
+        new AlertDialog.Builder(this)
+                .setTitle("Customize Button & Trackpad Size")
+                .setItems(sizeOptions, (dialog, which) -> {
+                    performHaptic();
+                    if (which >= 0 && which < heights.length) {
+                        applyButtonHeight(heights[which]);
+                        Toast.makeText(this, "Button size set to " + heights[which] + "dp", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .show();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isFullscreenTrackpad) {
+            toggleFullscreenTrackpad();
+            return;
+        }
+        super.onBackPressed();
     }
 
     private void sendShortcut(byte modifier, byte keyCode) {

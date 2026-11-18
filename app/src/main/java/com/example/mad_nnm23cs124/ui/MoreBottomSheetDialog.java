@@ -31,44 +31,23 @@ public class MoreBottomSheetDialog extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.dialog_more_sheet, container, false);
 
-        View btnMenuBluetooth = view.findViewById(R.id.btnMenuBluetooth);
-        if (btnMenuBluetooth != null) {
-            btnMenuBluetooth.setOnClickListener(v -> {
-                if (listener != null) listener.onMenuSelected("Bluetooth");
+        bindOption(view, R.id.btnMenuBluetooth, "Bluetooth");
+        bindOption(view, R.id.btnMenuFullscreen, "Fullscreen");
+        bindOption(view, R.id.btnMenuAdjustSize, "AdjustSize");
+        bindOption(view, R.id.btnMenuScanner, "Scanner");
+        bindOption(view, R.id.btnMenuJiggler, "Jiggler");
+        bindOption(view, R.id.btnMenuSettings, "Settings");
+
+        return view;
+    }
+
+    private void bindOption(View root, int viewId, String option) {
+        View v = root.findViewById(viewId);
+        if (v != null) {
+            v.setOnClickListener(view -> {
+                if (listener != null) listener.onMenuSelected(option);
                 dismiss();
             });
         }
-
-        view.findViewById(R.id.btnMenuKeyboard).setOnClickListener(v -> {
-            if (listener != null) listener.onMenuSelected("Keyboard");
-            dismiss();
-        });
-
-        view.findViewById(R.id.btnMenuMedia).setOnClickListener(v -> {
-            if (listener != null) listener.onMenuSelected("Media");
-            dismiss();
-        });
-
-        view.findViewById(R.id.btnMenuPresenter).setOnClickListener(v -> {
-            if (listener != null) listener.onMenuSelected("Presenter");
-            dismiss();
-        });
-
-        view.findViewById(R.id.btnMenuScanner).setOnClickListener(v -> {
-            if (listener != null) listener.onMenuSelected("Scanner");
-            dismiss();
-        });
-
-        view.findViewById(R.id.btnMenuJiggler).setOnClickListener(v -> {
-            if (listener != null) listener.onMenuSelected("Jiggler");
-            dismiss();
-        });
-
-        view.findViewById(R.id.btnMenuSettings).setOnClickListener(v -> {
-            if (listener != null) listener.onMenuSelected("Settings");
-            dismiss();
-        });
-
-        return view;
     }
 }

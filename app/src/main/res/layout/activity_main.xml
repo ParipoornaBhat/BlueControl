@@ -12,6 +12,7 @@
 
     <!-- Aesthetic Cockpit Top Header Card -->
     <LinearLayout
+        android:id="@+id/layoutHeaderCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -66,6 +67,18 @@
                 android:backgroundTint="#334155"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
+                android:layout_marginEnd="6dp" />
+
+            <!-- Fullscreen Trackpad Toggle -->
+            <Button
+                android:id="@+id/btnFullscreenToggle"
+                android:layout_width="38dp"
+                android:layout_height="36dp"
+                android:text="⛶"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:backgroundTint="#334155"
+                android:padding="0dp"
                 android:layout_marginEnd="6dp" />
 
             <!-- Settings Button -->
@@ -146,6 +159,7 @@
 
             <!-- Top Media / Volume Controls (Single-Line, 48dp, Never Clipped) -->
             <LinearLayout
+                android:id="@+id/layoutVolumeControls"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:orientation="horizontal"
@@ -264,6 +278,21 @@
                     android:id="@+id/layoutTrackpad"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
+
+                <!-- Floating Exit Fullscreen Pill (Visible ONLY in Fullscreen) -->
+                <Button
+                    android:id="@+id/btnExitFullscreen"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="12dp"
+                    android:text="✕ Exit Fullscreen"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#B31E293B"
+                    android:visibility="gone"
+                    android:elevation="12dp" />
 
                 <!-- Minimal Watermark Gesture Guide -->
                 <LinearLayout

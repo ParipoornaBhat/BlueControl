@@ -21,7 +21,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Control Modes &amp; Tools"
+        android:text="Controller Tools &amp; Actions"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -30,7 +30,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Switch input mode or manage your PC connection"
+        android:text="Quick actions, layout sizing &amp; device management"
         android:textColor="#94A3B8"
         android:textSize="12sp"
         android:gravity="center"
@@ -47,13 +47,13 @@
         android:textSize="14sp"
         android:textStyle="bold"
         android:backgroundTint="#2563EB"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="14dp" />
 
     <!-- Section Label -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="ADDITIONAL MODES"
+        android:text="TRACKPAD &amp; DISPLAY OPTIONS"
         android:textColor="#64748B"
         android:textSize="11sp"
         android:textStyle="bold"
@@ -61,33 +61,34 @@
         android:layout_marginBottom="8dp" />
 
     <Button
-        android:id="@+id/btnMenuKeyboard"
+        android:id="@+id/btnMenuFullscreen"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="⌨  Full PC Keyboard"
+        android:text="⛶  Toggle Full-Screen Trackpad"
         android:textColor="#FFFFFF"
         android:textSize="13sp"
-        android:backgroundTint="#334155"
+        android:backgroundTint="#1E293B"
         android:layout_marginBottom="8dp" />
 
     <Button
-        android:id="@+id/btnMenuMedia"
+        android:id="@+id/btnMenuAdjustSize"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="🎵  Multimedia Remote"
+        android:text="📐  Customize Button &amp; Trackpad Size"
         android:textColor="#FFFFFF"
         android:textSize="13sp"
-        android:backgroundTint="#334155"
-        android:layout_marginBottom="8dp" />
+        android:backgroundTint="#1E293B"
+        android:layout_marginBottom="14dp" />
 
-    <Button
-        android:id="@+id/btnMenuPresenter"
+    <!-- Section Label -->
+    <TextView
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="📊  Presenter Mode"
-        android:textColor="#FFFFFF"
-        android:textSize="13sp"
-        android:backgroundTint="#334155"
+        android:layout_height="wrap_content"
+        android:text="ADDITIONAL UTILITIES"
+        android:textColor="#64748B"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.05"
         android:layout_marginBottom="8dp" />
 
     <Button
@@ -97,26 +98,26 @@
         android:text="📷  Barcode &amp; QR Scanner"
         android:textColor="#FFFFFF"
         android:textSize="13sp"
-        android:backgroundTint="#334155"
+        android:backgroundTint="#1E293B"
         android:layout_marginBottom="8dp" />
 
     <Button
         android:id="@+id/btnMenuJiggler"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="⚡  Keep-Alive / Jiggler Mode"
+        android:text="🐭  Keep-Alive / Jiggler Mode"
         android:textColor="#FFFFFF"
         android:textSize="13sp"
-        android:backgroundTint="#334155"
+        android:backgroundTint="#1E293B"
         android:layout_marginBottom="8dp" />
 
     <Button
         android:id="@+id/btnMenuSettings"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="⚙  Settings &amp; Sensitivity"
+        android:text="⚙  Settings &amp; Preferences"
         android:textColor="#FFFFFF"
         android:textSize="13sp"
-        android:backgroundTint="#334155" />
+        android:backgroundTint="#1E293B" />
 
 </LinearLayout>
